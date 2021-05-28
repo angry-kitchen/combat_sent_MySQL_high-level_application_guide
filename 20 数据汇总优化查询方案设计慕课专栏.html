@@ -1,0 +1,573 @@
+<html><head><meta charset="utf-8"><title>20 数据汇总优化查询方案设计-慕课专栏</title>
+			<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+			<meta name="renderer" content="webkit">
+			<meta property="qc:admins" content="77103107776157736375">
+			<meta property="wb:webmaster" content="c4f857219bfae3cb">
+			<meta http-equiv="Access-Control-Allow-Origin" content="*">
+			<meta http-equiv="Cache-Control" content="no-transform ">
+			<meta http-equiv="Cache-Control" content="no-siteapp">
+			<link rel="apple-touch-icon" sizes="76x76" href="https://www.imooc.com/static/img/common/touch-icon-ipad.png">
+			<link rel="apple-touch-icon" sizes="120x120" href="https://www.imooc.com/static/img/common/touch-icon-iphone-retina.png">
+			<link rel="apple-touch-icon" sizes="152x152" href="https://www.imooc.com/static/img/common/touch-icon-ipad-retina.png">
+			<link href="https://moco.imooc.com/captcha/style/captcha.min.css" rel="stylesheet">
+			<link rel="stylesheet" href="https://www.imooc.com/static/moco/v1.0/dist/css/moco.min.css?t=201907021539" type="text/css">
+			<link rel="stylesheet" href="https://www.imooc.com/static/lib/swiper/swiper-3.4.2.min.css?t=201907021539">
+			<link rel="stylesheet" href="https://static.mukewang.com/static/css/??base.css,common/common-less.css?t=2.5,column/zhuanlanChapter-less.css?t=2.5,course/inc/course_tipoff-less.css?t=2.5?v=201907051055" type="text/css">
+			<link charset="utf-8" rel="stylesheet" href="https://www.imooc.com/static/lib/ueditor/themes/imooc/css/ueditor.css?v=201907021539"><link rel="stylesheet" href="https://www.imooc.com/static/lib/baiduShare/api/css/share_style0_16.css?v=6aba13f0.css"></head>
+			<body><div id="main">
+
+
+<div class="main-con hide-menu">
+    <!-- 左侧菜单 & 索引 -->
+    
+    <div class="right-content" style="padding-left: 0px;">
+        <div class="container clearfix" id="top" style="width: 1134px; display: block;">
+            
+            
+            <div class="center_con js-center_con l" style="width: 1134px;">
+                <div class="article-con">
+                                            <!-- 买过的阅读 -->
+                        
+
+                    
+                    <div class="art-title" style="margin-top: 0px;">
+                        20 数据汇总优化查询方案设计
+                    </div>
+                    <div class="art-info clearfix">
+                        
+                        <span class="l">
+                            更新时间：2020-05-11 09:27:46
+                        </span>
+                    </div>
+                    <div class="art-top">
+                                                <img src="https://img2.sycdn.imooc.com/5e9837b30001f7dc06400426.jpg" alt="">
+                                                                        <div class="famous-word-box">
+                            <img src="https://www.imooc.com/static/img/column/bg-l.png" alt="" class="bg1 bg">
+                            <img src="https://www.imooc.com/static/img/column/bg-r.png" alt="" class="bg2 bg">
+                            <div class="famous-word">没有智慧的头脑，就象没有腊烛的灯笼。——列夫·托尔斯泰<p></p></div>
+                        </div>
+                                            </div>
+                    <div class="art-content js-lookimg">
+                        <div id="article_content">
+                            <div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">数据汇总优化和数据统计的概念非常类似，但是，它们却是两类完全不同的业务需求。数据汇总优化的目的是优化，实现是汇总，是针对大数据量查询缓慢而提出的解决方案。理解任何的方案设计，都是建立在实际案例的基础之上，接下来，我们就一起探讨下优化查询中的数据汇总。</p>
+</div><div class="cl-preview-section"><h2 id="认识数据汇总" style="font-size: 30px;">1 认识数据汇总</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">单独去说数据汇总的概念比较简单，但是可能听完之后还是 “云里雾里”。下面，我先去说两个实际在项目中遇到的场景，提出它们存在的问题。之后，分析怎样用数据汇总解决问题。最后，讨论数据汇总存在的优缺点。</p>
+</div><div class="cl-preview-section"><h3 id="需要数据汇总的两个场景">1.1 需要数据汇总的两个场景</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">这里我将要介绍的两个场景都来自于广告系统，也都是我在日常开发中遇到的场景（实际的会稍微复杂一些，我做了一些精简，不过，核心是思想）。据此，仔细分析你的业务系统，你会发现其中存在着大量的相似性。</p>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">其实，不只是广告系统，任何业务系统都几乎会有自己的报表模块（业务）。报表模块用于报告、分析当前业务系统的表现，对于广告系统来说，就是经典的：点（广告点击）、展（广告展示）、消（广告消费）。下面，我给出一张示例表的创建语句，建表并向其中插入一些数据。</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- daily_creative_stat 表：每一天的创意信息</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token keyword">IF</span> <span class="token operator">NOT</span> <span class="token keyword">EXISTS</span> <span class="token punctuation">`</span>daily_creative_stat<span class="token punctuation">`</span> <span class="token punctuation">(</span>
+  <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'关联创意所属用户'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>plan_id<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'关联推广计划 id'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>unit_id<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'关联推广单元 id'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>creative_id<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'关联创意 id'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>click<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'点击次数'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>display<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'展现次数'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>cost<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'消费金额, 单位为分'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span><span class="token keyword">date</span><span class="token punctuation">`</span> <span class="token keyword">date</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'数据日期'</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span><span class="token operator">=</span><span class="token keyword">InnoDB</span> <span class="token keyword">DEFAULT</span> <span class="token keyword">CHARSET</span><span class="token operator">=</span>utf8 <span class="token keyword">COMMENT</span><span class="token operator">=</span><span class="token string">'创意报表信息'</span><span class="token punctuation">;</span>
+
+<span class="token comment">-- fake 一些数据插入 daily_creative_stat 表</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10001</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">,</span> <span class="token number">108</span><span class="token punctuation">,</span> <span class="token number">100</span><span class="token punctuation">,</span> <span class="token number">890</span><span class="token punctuation">,</span> <span class="token string">'2019-12-01'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10002</span><span class="token punctuation">,</span> <span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">21</span><span class="token punctuation">,</span> <span class="token number">31</span><span class="token punctuation">,</span> <span class="token number">188</span><span class="token punctuation">,</span> <span class="token number">221</span><span class="token punctuation">,</span> <span class="token number">760</span><span class="token punctuation">,</span> <span class="token string">'2019-12-01'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10003</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">24</span><span class="token punctuation">,</span> <span class="token number">34</span><span class="token punctuation">,</span> <span class="token number">121</span><span class="token punctuation">,</span> <span class="token number">345</span><span class="token punctuation">,</span> <span class="token number">310</span><span class="token punctuation">,</span> <span class="token string">'2019-12-01'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10001</span><span class="token punctuation">,</span> <span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">26</span><span class="token punctuation">,</span> <span class="token number">32</span><span class="token punctuation">,</span> <span class="token number">298</span><span class="token punctuation">,</span> <span class="token number">786</span><span class="token punctuation">,</span> <span class="token number">407</span><span class="token punctuation">,</span> <span class="token string">'2019-12-01'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10001</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">22</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">,</span> <span class="token number">211</span><span class="token punctuation">,</span> <span class="token number">112</span><span class="token punctuation">,</span> <span class="token number">351</span><span class="token punctuation">,</span> <span class="token string">'2019-12-01'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10002</span><span class="token punctuation">,</span> <span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">21</span><span class="token punctuation">,</span> <span class="token number">35</span><span class="token punctuation">,</span> <span class="token number">212</span><span class="token punctuation">,</span> <span class="token number">238</span><span class="token punctuation">,</span> <span class="token number">765</span><span class="token punctuation">,</span> <span class="token string">'2019-12-02'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10001</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">37</span><span class="token punctuation">,</span> <span class="token number">345</span><span class="token punctuation">,</span> <span class="token number">765</span><span class="token punctuation">,</span> <span class="token number">329</span><span class="token punctuation">,</span> <span class="token string">'2019-12-02'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10002</span><span class="token punctuation">,</span> <span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">21</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">,</span> <span class="token number">777</span><span class="token punctuation">,</span> <span class="token number">119</span><span class="token punctuation">,</span> <span class="token number">342</span><span class="token punctuation">,</span> <span class="token string">'2019-12-02'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10001</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">39</span><span class="token punctuation">,</span> <span class="token number">209</span><span class="token punctuation">,</span> <span class="token number">110</span><span class="token punctuation">,</span> <span class="token number">667</span><span class="token punctuation">,</span> <span class="token string">'2019-12-02'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10003</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">24</span><span class="token punctuation">,</span> <span class="token number">34</span><span class="token punctuation">,</span> <span class="token number">287</span><span class="token punctuation">,</span> <span class="token number">114</span><span class="token punctuation">,</span> <span class="token number">665</span><span class="token punctuation">,</span> <span class="token string">'2019-12-02'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10001</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">,</span> <span class="token number">231</span><span class="token punctuation">,</span> <span class="token number">187</span><span class="token punctuation">,</span> <span class="token number">498</span><span class="token punctuation">,</span> <span class="token string">'2019-12-03'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10001</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">,</span> <span class="token number">421</span><span class="token punctuation">,</span> <span class="token number">231</span><span class="token punctuation">,</span> <span class="token number">238</span><span class="token punctuation">,</span> <span class="token string">'2019-12-03'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10003</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">24</span><span class="token punctuation">,</span> <span class="token number">34</span><span class="token punctuation">,</span> <span class="token number">877</span><span class="token punctuation">,</span> <span class="token number">879</span><span class="token punctuation">,</span> <span class="token number">108</span><span class="token punctuation">,</span> <span class="token string">'2019-12-03'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10002</span><span class="token punctuation">,</span> <span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">27</span><span class="token punctuation">,</span> <span class="token number">33</span><span class="token punctuation">,</span> <span class="token number">996</span><span class="token punctuation">,</span> <span class="token number">900</span><span class="token punctuation">,</span> <span class="token number">211</span><span class="token punctuation">,</span> <span class="token string">'2019-12-03'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> daily_creative_stat <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token number">10002</span><span class="token punctuation">,</span> <span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">26</span><span class="token punctuation">,</span> <span class="token number">32</span><span class="token punctuation">,</span> <span class="token number">251</span><span class="token punctuation">,</span> <span class="token number">243</span><span class="token punctuation">,</span> <span class="token number">520</span><span class="token punctuation">,</span> <span class="token string">'2019-12-03'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">对于 daily_creative_stat 表，我们需要重点关注 click、display 和 cost 三个数据项，它们也就是构成报表的核心。而 user_id、plan_id、unit_id 以及 creative_id 只是关于创意的一些层级附属信息。那么，如果我想要得到这些数据：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;">用户 10001 的不同 plan_id 的分类汇总数据</li>
+<li style="font-size: 20px; line-height: 38px;">用户 10001 的不同 plan_id、unit_id 的分类汇总数据</li>
+<li style="font-size: 20px; line-height: 38px;">最近一周的用户数据</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">这些需求并不难解决，我们只需要对应着各种条件做 <code>GROUP BY</code> 就可以了。但是，报表数据通常都会很多，对如此大量的“原始数据” 做聚合计算不仅会降低 MySQL 服务器的性能，对我们的服务也会有很大的延迟。所以，数据汇总应运而生：</p>
+</div><div class="cl-preview-section"><blockquote>
+<p style="font-size: 20px; line-height: 38px;">按照预先约定的查询需求，提前将数据进行分类聚合（按照条件进行 GROUP BY 和 SUM），并把聚合结果存储在辅助性的汇总表中。而数据汇总的最终目的是降低整体的数据量、减小数据查询难度和计算延迟。</p>
+</blockquote>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">为报表性的数据表构造汇总表是数据汇总最常见的一种场景。下面，考虑第二种场景：广告系统中的创意物料想要支持视频文件，就必须要提供文件服务器支持文件的上传、下载和存储。那么，也就需要一张文件表来记录相关信息。建表语句如下：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token keyword">IF</span> <span class="token operator">NOT</span> <span class="token keyword">EXISTS</span> <span class="token punctuation">`</span>file_info<span class="token punctuation">`</span> <span class="token punctuation">(</span>
+  <span class="token punctuation">`</span>name<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'文件名'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>pro_line<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'产品线'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>size<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> unsigned <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'文件大小'</span><span class="token punctuation">,</span>
+  <span class="token keyword">PRIMARY</span> <span class="token keyword">KEY</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>name<span class="token punctuation">`</span><span class="token punctuation">,</span><span class="token punctuation">`</span>pro_line<span class="token punctuation">`</span><span class="token punctuation">)</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span><span class="token operator">=</span><span class="token keyword">InnoDB</span> <span class="token keyword">DEFAULT</span> <span class="token keyword">CHARSET</span><span class="token operator">=</span>utf8 <span class="token keyword">COMMENT</span><span class="token operator">=</span><span class="token string">'文件信息'</span><span class="token punctuation">;</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">这张表非常简单，每一条记录存储了产品线（可以理解是广告主，例如：宝马、大众）中视频物料的文件名和文件大小。但是，如果我想要知道每一个产品线上传文件的总量、删除总量、上传次数和删除次数等等这样的数据，就需要去创建汇总表解决这个需求了。即对应于每一次 file_info 表的插入、更新和删除，汇总表也必须做出相应的改动。</p>
+</div><div class="cl-preview-section"><h3 id="数据汇总的优缺点">1.2 数据汇总的优缺点</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">数据汇总会给我们日常的工作需求带来便利性，但是它也是一把双刃剑，缺点也非常明显。下面，我将总结数据汇总的优缺点：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;">
+<p style="font-size: 20px; line-height: 38px;">数据汇总的优点</p>
+<ul>
+<li style="font-size: 20px; line-height: 38px;">减少了原始数据量，使数据计算的难度和复杂度大幅降低</li>
+<li style="font-size: 20px; line-height: 38px;">数据的分类聚合让业务更加清晰，可读性好</li>
+<li style="font-size: 20px; line-height: 38px;">辅助汇总表也是对原始数据的备份，提高系统数据安全性</li>
+</ul>
+</li>
+<li style="font-size: 20px; line-height: 38px;">
+<p style="font-size: 20px; line-height: 38px;">数据汇总的缺点</p>
+<ul>
+<li style="font-size: 20px; line-height: 38px;">汇总表数据来自于原始数据，所以，是冗余存储，占用额外的存储空间</li>
+<li style="font-size: 20px; line-height: 38px;">汇总表数据需要与原始数据完全匹配，需要增加校验机制，增加了工作量</li>
+</ul>
+</li>
+</ul>
+</div><div class="cl-preview-section"><h2 id="报表型数据汇总" style="font-size: 30px;">2 报表型数据汇总</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">如今的数据处理大致可以分为两类：OLTP（联机事务处理）和 OLAP（联机分析处理）。OLTP 是传统关系型数据库的主要应用，而我们这里所说的报表型应用则属于 OLAP，它偏向于复杂的分析操作、侧重决策支持，并且提供直观易懂的查询结果。下面，我先去讲解 OLAP 的相关知识，再去讲解 OLAP 的优化，主要目的也是想让知识点更加的系统化。</p>
+</div><div class="cl-preview-section"><h3 id="认识-olap">2.1 认识 OLAP</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">对于 OLAP，我们先不要去管它的定义，先去搞清楚两个核心概念：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;"><strong>维度</strong>：是描述与业务主题相关的一组属性，单个属性或属性集合可以构成一个维</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>指标</strong>：起到数据度量的作用，是数据的实际意义，即描述数据 “是什么”</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">那么，针对于 daily_creative_stat 表来说，指标列就是 <code>click</code>、<code>display</code> 和 <code>cost</code>，其他的则属于维度列。简单来说，OLAP 就是根据维度列的组合对指标列做聚合计算（SUM）。所以，我们只需要把 “对维度列的组合” 搞清楚也就基本上搞清楚了 OLAP。</p>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">这里其实有一个误区，维度列的组合并不是排列组合，而是选择性组合，即挑选想要的维度列。例如，对于 daily_creative_stat 表来说，我可以这样做 OLAP 查询：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;">查询不同用户的数据汇总情况，即根据 user_id 的组合</li>
+<li style="font-size: 20px; line-height: 38px;">查询不同用户的不同推广计划的数据汇总情况，即根据 user_id 和 plan_id 的组合</li>
+<li style="font-size: 20px; line-height: 38px;">…</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">查询操作是比较简单的（这也是 OLAP 的特性之一），我们只需要对需要组合的维度列做 <code>GROUP BY</code> 就可以。唯一的问题是当报表的数据量偏大时，需要花很多时间，消耗 MySQL 很多计算性能。由此，我们可以利用汇总表来优化 OLAP 的查询性能。</p>
+</div><div class="cl-preview-section"><h3 id="优化-olap">2.2 优化 OLAP</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">其实，根据前文对报表数据查询的劣势，应该可以想到我们需要创建哪些汇总表。但是，创建多少汇总表、哪些维度列组合的汇总表等等，总会有一些依据。总结如下：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;">根据需求确定需要哪些汇总表，不要盲目地一次性创建很多</li>
+<li style="font-size: 20px; line-height: 38px;">维度列的组合不要有太大的冗余，特别是数据量级之间的规模相差不是很大的情况</li>
+<li style="font-size: 20px; line-height: 38px;">汇总表最好包含日期（或时间）列</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">按照周期（例如一个周、一个月、一个季度等等）去查看数据是再正常不过的事情了，所以，汇总表包含日期通常也是个硬需求。那么，对于维度列组合的冗余指的是什么意思呢 ？看一看下面的例子：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- 查看不同用户、不同推广计划的指标数据情况</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> user_id<span class="token punctuation">,</span> plan_id<span class="token punctuation">,</span> <span class="token function">SUM</span><span class="token punctuation">(</span>click<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">SUM</span><span class="token punctuation">(</span>display<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">SUM</span><span class="token punctuation">(</span>cost<span class="token punctuation">)</span> <span class="token keyword">FROM</span> daily_creative_stat <span class="token keyword">GROUP</span> <span class="token keyword">BY</span> user_id<span class="token punctuation">,</span> plan_id<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+---------+------------+--------------+-----------+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> plan_id <span class="token operator">|</span> <span class="token function">SUM</span><span class="token punctuation">(</span>click<span class="token punctuation">)</span> <span class="token operator">|</span> <span class="token function">SUM</span><span class="token punctuation">(</span>display<span class="token punctuation">)</span> <span class="token operator">|</span> <span class="token function">SUM</span><span class="token punctuation">(</span>cost<span class="token punctuation">)</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+---------+------------+--------------+-----------+</span>
+<span class="token operator">|</span>   <span class="token number">10001</span> <span class="token operator">|</span>      <span class="token number">10</span> <span class="token operator">|</span>       <span class="token number">1525</span> <span class="token operator">|</span>         <span class="token number">1505</span> <span class="token operator">|</span>      <span class="token number">2973</span> <span class="token operator">|</span>
+<span class="token operator">|</span>   <span class="token number">10001</span> <span class="token operator">|</span>      <span class="token number">11</span> <span class="token operator">|</span>        <span class="token number">298</span> <span class="token operator">|</span>          <span class="token number">786</span> <span class="token operator">|</span>       <span class="token number">407</span> <span class="token operator">|</span>
+<span class="token operator">|</span>   <span class="token number">10002</span> <span class="token operator">|</span>      <span class="token number">11</span> <span class="token operator">|</span>       <span class="token number">2424</span> <span class="token operator">|</span>         <span class="token number">1721</span> <span class="token operator">|</span>      <span class="token number">2598</span> <span class="token operator">|</span>
+<span class="token operator">|</span>   <span class="token number">10003</span> <span class="token operator">|</span>      <span class="token number">12</span> <span class="token operator">|</span>       <span class="token number">1285</span> <span class="token operator">|</span>         <span class="token number">1338</span> <span class="token operator">|</span>      <span class="token number">1083</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+---------+------------+--------------+-----------+</span>
+<span class="token number">4</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+
+<span class="token comment">-- 查看不同用户的指标数据情况</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> user_id<span class="token punctuation">,</span> <span class="token function">SUM</span><span class="token punctuation">(</span>click<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">SUM</span><span class="token punctuation">(</span>display<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">SUM</span><span class="token punctuation">(</span>cost<span class="token punctuation">)</span> <span class="token keyword">FROM</span> daily_creative_stat <span class="token keyword">GROUP</span> <span class="token keyword">BY</span> user_id<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+------------+--------------+-----------+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> <span class="token function">SUM</span><span class="token punctuation">(</span>click<span class="token punctuation">)</span> <span class="token operator">|</span> <span class="token function">SUM</span><span class="token punctuation">(</span>display<span class="token punctuation">)</span> <span class="token operator">|</span> <span class="token function">SUM</span><span class="token punctuation">(</span>cost<span class="token punctuation">)</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+------------+--------------+-----------+</span>
+<span class="token operator">|</span>   <span class="token number">10001</span> <span class="token operator">|</span>       <span class="token number">1823</span> <span class="token operator">|</span>         <span class="token number">2291</span> <span class="token operator">|</span>      <span class="token number">3380</span> <span class="token operator">|</span>
+<span class="token operator">|</span>   <span class="token number">10002</span> <span class="token operator">|</span>       <span class="token number">2424</span> <span class="token operator">|</span>         <span class="token number">1721</span> <span class="token operator">|</span>      <span class="token number">2598</span> <span class="token operator">|</span>
+<span class="token operator">|</span>   <span class="token number">10003</span> <span class="token operator">|</span>       <span class="token number">1285</span> <span class="token operator">|</span>         <span class="token number">1338</span> <span class="token operator">|</span>      <span class="token number">1083</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+------------+--------------+-----------+</span>
+<span class="token number">3</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">如果我们确实有以上的两个查询需求，我们只需要创建一张数据汇总表即可，即 “不同用户、不同推广计划的数据汇总”，建表 SQL 如下：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- 用户推广计划汇总表，即你想汇总哪些维度和指标列，表中就应该包含那些列</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token keyword">IF</span> <span class="token operator">NOT</span> <span class="token keyword">EXISTS</span> <span class="token punctuation">`</span>user_plan_stat<span class="token punctuation">`</span> <span class="token punctuation">(</span>
+  <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'关联创意所属用户'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>plan_id<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'关联推广计划 id'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>click<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'点击次数'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>display<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'展现次数'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>cost<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'消费金额, 单位为分'</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span><span class="token operator">=</span><span class="token keyword">InnoDB</span> <span class="token keyword">DEFAULT</span> <span class="token keyword">CHARSET</span><span class="token operator">=</span>utf8 <span class="token keyword">COMMENT</span><span class="token operator">=</span><span class="token string">'用户推广计划汇总表'</span><span class="token punctuation">;</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">那么，为什么不再去创建一张 “用户汇总表” 呢 ？这是因为 user_plan_stat 表的维度已经分的 “足够细” 了，而且表中的数据量也是偏少的。如果想要查询用户汇总数据，直接查询 user_plan_stat 表就可以。没有必要再去创建一张汇总表，造成数据冗余的同时，也增加了维护成本。</p>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">企业级开发中，大多数的查询需求可能是：某一个周、一个月的汇总数据，此时，我们可以使用 MySQL 提供的 WEEK、MONTH 等等函数实现。例如：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- 查询每周的用户数据</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> user_id<span class="token punctuation">,</span> WEEK<span class="token punctuation">(</span><span class="token keyword">date</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">SUM</span><span class="token punctuation">(</span>click<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">SUM</span><span class="token punctuation">(</span>display<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">SUM</span><span class="token punctuation">(</span>cost<span class="token punctuation">)</span> <span class="token keyword">FROM</span> daily_creative_stat <span class="token keyword">GROUP</span> <span class="token keyword">BY</span> user_id<span class="token punctuation">,</span> WEEK<span class="token punctuation">(</span><span class="token keyword">date</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+------------+------------+--------------+-----------+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> WEEK<span class="token punctuation">(</span><span class="token keyword">date</span><span class="token punctuation">)</span> <span class="token operator">|</span> <span class="token function">SUM</span><span class="token punctuation">(</span>click<span class="token punctuation">)</span> <span class="token operator">|</span> <span class="token function">SUM</span><span class="token punctuation">(</span>display<span class="token punctuation">)</span> <span class="token operator">|</span> <span class="token function">SUM</span><span class="token punctuation">(</span>cost<span class="token punctuation">)</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+------------+------------+--------------+-----------+</span>
+<span class="token operator">|</span>   <span class="token number">10001</span> <span class="token operator">|</span>         <span class="token number">48</span> <span class="token operator">|</span>       <span class="token number">1823</span> <span class="token operator">|</span>         <span class="token number">2291</span> <span class="token operator">|</span>      <span class="token number">3380</span> <span class="token operator">|</span>
+<span class="token operator">|</span>   <span class="token number">10002</span> <span class="token operator">|</span>         <span class="token number">48</span> <span class="token operator">|</span>       <span class="token number">2424</span> <span class="token operator">|</span>         <span class="token number">1721</span> <span class="token operator">|</span>      <span class="token number">2598</span> <span class="token operator">|</span>
+<span class="token operator">|</span>   <span class="token number">10003</span> <span class="token operator">|</span>         <span class="token number">48</span> <span class="token operator">|</span>       <span class="token number">1285</span> <span class="token operator">|</span>         <span class="token number">1338</span> <span class="token operator">|</span>      <span class="token number">1083</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+------------+------------+--------------+-----------+</span>
+<span class="token number">3</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
+
+<span class="token comment">-- 查询12月的用户数据</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> user_id<span class="token punctuation">,</span> MONTH<span class="token punctuation">(</span><span class="token keyword">date</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">SUM</span><span class="token punctuation">(</span>click<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">SUM</span><span class="token punctuation">(</span>display<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">SUM</span><span class="token punctuation">(</span>cost<span class="token punctuation">)</span> <span class="token keyword">FROM</span> daily_creative_stat <span class="token keyword">WHERE</span> MONTH<span class="token punctuation">(</span><span class="token keyword">date</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token number">12</span> <span class="token keyword">GROUP</span> <span class="token keyword">BY</span> user_id<span class="token punctuation">,</span> MONTH<span class="token punctuation">(</span><span class="token keyword">date</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+-------------+------------+--------------+-----------+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> MONTH<span class="token punctuation">(</span><span class="token keyword">date</span><span class="token punctuation">)</span> <span class="token operator">|</span> <span class="token function">SUM</span><span class="token punctuation">(</span>click<span class="token punctuation">)</span> <span class="token operator">|</span> <span class="token function">SUM</span><span class="token punctuation">(</span>display<span class="token punctuation">)</span> <span class="token operator">|</span> <span class="token function">SUM</span><span class="token punctuation">(</span>cost<span class="token punctuation">)</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------------+------------+--------------+-----------+</span>
+<span class="token operator">|</span>   <span class="token number">10001</span> <span class="token operator">|</span>          <span class="token number">12</span> <span class="token operator">|</span>       <span class="token number">1823</span> <span class="token operator">|</span>         <span class="token number">2291</span> <span class="token operator">|</span>      <span class="token number">3380</span> <span class="token operator">|</span>
+<span class="token operator">|</span>   <span class="token number">10002</span> <span class="token operator">|</span>          <span class="token number">12</span> <span class="token operator">|</span>       <span class="token number">2424</span> <span class="token operator">|</span>         <span class="token number">1721</span> <span class="token operator">|</span>      <span class="token number">2598</span> <span class="token operator">|</span>
+<span class="token operator">|</span>   <span class="token number">10003</span> <span class="token operator">|</span>          <span class="token number">12</span> <span class="token operator">|</span>       <span class="token number">1285</span> <span class="token operator">|</span>         <span class="token number">1338</span> <span class="token operator">|</span>      <span class="token number">1083</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------------+------------+--------------+-----------+</span>
+<span class="token number">3</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">此时，就可以去创建周、月汇总表，并把每个周、每个月的汇总数据插入其中。以后再去查询类似的数据时，只需要 <code>SELECT</code> 汇总表，而不需要 <code>GROUP BY</code> 原始报表。以此，也就实现了对 OLAP 查询报表的优化。</p>
+</div><div class="cl-preview-section"><h2 id="触发器实现数据汇总" style="font-size: 30px;">3 触发器实现数据汇总</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">很多介绍 MySQL 的书中说到：不建议使用触发器，主要是增加程序的复杂度，后期维护困难。但是，凡事无绝对，对于我在上文中讲解的 “数据汇总第二种情况” 来说，触发器具有天然的优势。接下来，我先去详细的讲解下触发器的概念和使用方法，再去使用触发器解决我们的需求。</p>
+</div><div class="cl-preview-section"><h3 id="初识触发器">3.1 初识触发器</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">首先来说，触发器只会用在特定的场合，它是写在数据库中的一段 SQL 脚本，当数据库表记录发生变化时（插入、删除或更新操作），触发（这也是触发器名称的由来）一条或多条 SQL 语句实现多张表的数据同步。且触发器最大的特点是：触发事件的操作和触发器里的 SQL 语句是一个事务操作，具有原子性，即要么全部执行，要么都不执行。</p>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">说到这里，你肯定会想，我用代码也可以实现呀，而且用代码可以更加灵活的控制，当然也包括调试。事实确实如此，所以，当你选择使用触发器时，一定是业务逻辑比较简单，且涉及的表比较少（最好不超过3个）。</p>
+</div><div class="cl-preview-section"><h3 id="创建触发器">3.2 创建触发器</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">创建触发器的语法是比较复杂的，如下所示：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token keyword">CREATE</span>
+    <span class="token punctuation">[</span><span class="token keyword">DEFINER</span> <span class="token operator">=</span> <span class="token keyword">user</span><span class="token punctuation">]</span>
+    <span class="token keyword">TRIGGER</span> trigger_name
+    trigger_time trigger_event
+    <span class="token keyword">ON</span> tbl_name <span class="token keyword">FOR EACH ROW</span>
+    <span class="token punctuation">[</span>trigger_order<span class="token punctuation">]</span>
+    trigger_body
+
+trigger_time: { BEFORE <span class="token operator">|</span> <span class="token keyword">AFTER</span> }
+
+trigger_event: { <span class="token keyword">INSERT</span> <span class="token operator">|</span> <span class="token keyword">UPDATE</span> <span class="token operator">|</span> <span class="token keyword">DELETE</span> }
+
+trigger_order: { FOLLOWS <span class="token operator">|</span> PRECEDES } other_trigger_name
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">下面，我来讲解下其中各个参数或关键字的含义：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;"><strong>trigger_name</strong>：触发器的名称</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>trigger_time</strong> 触发器执行的时机
+<ul>
+<li style="font-size: 20px; line-height: 38px;"><strong>BEFORE</strong>：事件发生之前</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>AFTER</strong>：事件发生之后</li>
+</ul>
+</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>trigger_event</strong>：触发事件
+<ul>
+<li style="font-size: 20px; line-height: 38px;"><strong>INSERT</strong>：插入数据时</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>UPDATE</strong>：更新数据时</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>DELETE</strong>：删除数据时</li>
+</ul>
+</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>tbl_name</strong>：触发器关联的表名称，可以使用 <code>数据库.表名</code> 来明确指定</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>FOR EACH ROW</strong>：标识任何一条表记录上的操作满足触发事件都会触发该触发器</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>trigger_order</strong>：用于定义多个触发器的执行顺序
+<ul>
+<li style="font-size: 20px; line-height: 38px;"><strong>FOLLOWS</strong>：在 … 之后</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>PRECEDES</strong>：在 … 之前</li>
+</ul>
+</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>trigger_body</strong>：触发器的主体，即触发器具体要做的事情</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">理解语法往往都不会很难，但是一去写发现有难度了。所以，我来写一个示例，帮你更好的理解触发器的语法。如下所示：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- 设置变量 worker_salary 的值为 0</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SET</span> <span class="token variable">@worker_salary</span> <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
+
+<span class="token comment">-- 创建触发器 worker_salary_sum， 在 worker 表插入数据发生之前（针对于每一行），让 worker_salary 增加插入记录的 salary 值</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">CREATE</span> <span class="token keyword">TRIGGER</span> worker_salary_sum BEFORE <span class="token keyword">INSERT</span> <span class="token keyword">ON</span> <span class="token punctuation">`</span>imooc_mysql<span class="token punctuation">`</span><span class="token punctuation">.</span><span class="token punctuation">`</span>worker<span class="token punctuation">`</span> <span class="token keyword">FOR EACH ROW</span> <span class="token keyword">SET</span> <span class="token variable">@worker_salary</span> <span class="token operator">=</span> <span class="token variable">@worker_salary</span> <span class="token operator">+</span> NEW<span class="token punctuation">.</span>salary<span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.05</span> sec<span class="token punctuation">)</span>
+
+<span class="token comment">-- 校验 worker_salary 的值是否是 0</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token variable">@worker_salary</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">----------------+</span>
+<span class="token operator">|</span> <span class="token variable">@worker_salary</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">----------------+</span>
+<span class="token operator">|</span>              <span class="token number">0</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">----------------+</span>
+<span class="token number">1</span> <span class="token keyword">row</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+
+<span class="token comment">-- 向 worker 表中插入一行数据，指定 salary 的值是 3200</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>worker<span class="token punctuation">`</span> <span class="token punctuation">(</span><span class="token punctuation">`</span><span class="token keyword">type</span><span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>name<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>salary<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>version<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token string">'C'</span><span class="token punctuation">,</span> <span class="token string">'app'</span><span class="token punctuation">,</span> <span class="token number">3200</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.03</span> sec<span class="token punctuation">)</span>
+
+<span class="token comment">-- 校验 worker_salary 的值是否会变成 3200</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token variable">@worker_salary</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">----------------+</span>
+<span class="token operator">|</span> <span class="token variable">@worker_salary</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">----------------+</span>
+<span class="token operator">|</span>           <span class="token number">3200</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">----------------+</span>
+<span class="token number">1</span> <span class="token keyword">row</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">以上的创建、执行流程并不难理解，只是需要注意我在创建触发器时使用的 NEW 关键字。其实，MySQL 提供了 OLD 和 NEW 这两个关键字对触发器进行扩展，且它们不区分大小写。关于它们，你需要知道：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;">触发事件是 INSERT 时，只有 NEW 关键字可用，它代表的是将要（BEFORE）或已经（AFTER）插入的数据记录</li>
+<li style="font-size: 20px; line-height: 38px;">触发事件是 DELETE 时，只有 OLD 关键字可用，它代表的是将要（BEFORE）或已经（AFTER）删除的数据记录</li>
+<li style="font-size: 20px; line-height: 38px;">触发事件是 UPDATE 时，OLD 是该行数据更新之前的副本，NEW 是更新之后的副本</li>
+</ul>
+</div><div class="cl-preview-section"><h3 id="查看触发器">3.3 查看触发器</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">查看触发器可以使用 <code>SHOW TRIGGERS</code> 命令，它会打印在当前数据库中的触发器信息。如果想要限定数据库，可以加上 <code>FROM schema_name</code> 子句。如下所示：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- 查看 imooc_mysql 库中的触发器信息</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SHOW</span> TRIGGERS <span class="token keyword">FROM</span> imooc_mysql\G
+<span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span> <span class="token number">1</span><span class="token punctuation">.</span> <span class="token keyword">row</span> <span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span>
+             <span class="token keyword">Trigger</span>: worker_salary_sum
+               Event: <span class="token keyword">INSERT</span>
+               <span class="token keyword">Table</span>: worker
+           Statement: <span class="token keyword">SET</span> <span class="token variable">@worker_salary</span> <span class="token operator">=</span> <span class="token variable">@worker_salary</span> <span class="token operator">+</span> NEW<span class="token punctuation">.</span>salary
+              Timing: BEFORE
+             Created: <span class="token number">2019</span><span class="token operator">-</span><span class="token number">12</span><span class="token operator">-</span><span class="token number">15</span> <span class="token number">23</span>:<span class="token number">58</span>:<span class="token number">32.99</span>
+            sql_mode: ONLY_FULL_GROUP_BY<span class="token punctuation">,</span>STRICT_TRANS_TABLES<span class="token punctuation">,</span>NO_ZERO_IN_DATE<span class="token punctuation">,</span>NO_ZERO_DATE<span class="token punctuation">,</span>ERROR_FOR_DIVISION_BY_ZERO<span class="token punctuation">,</span>NO_AUTO_CREATE_USER<span class="token punctuation">,</span>NO_ENGINE_SUBSTITUTION
+             <span class="token keyword">Definer</span>: root<span class="token variable">@localhost</span>
+character_set_client: utf8
+collation_connection: utf8_general_ci
+  <span class="token keyword">Database</span> Collation: latin1_swedish_ci
+<span class="token number">1</span> <span class="token keyword">row</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">当然，系统中的触发器信息一定存储在系统库中（这也是经验之谈），如果还记得之前对 information_schema 库的介绍就可以知道，它存储在 TRIGGERS 表中。我们可以直接查询这张表查看触发器信息：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- 查看 imooc_mysql 库中定义的触发器的详细信息</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> information_schema<span class="token punctuation">.</span>TRIGGERS <span class="token keyword">WHERE</span> TRIGGER_SCHEMA <span class="token operator">=</span> <span class="token string">'imooc_mysql'</span>\G
+<span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span> <span class="token number">1</span><span class="token punctuation">.</span> <span class="token keyword">row</span> <span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span><span class="token operator">*</span>
+           TRIGGER_CATALOG: <span class="token number">def</span>
+            TRIGGER_SCHEMA: imooc_mysql
+              TRIGGER_NAME: worker_salary_sum
+        EVENT_MANIPULATION: <span class="token keyword">INSERT</span>
+      EVENT_OBJECT_CATALOG: <span class="token number">def</span>
+       EVENT_OBJECT_SCHEMA: imooc_mysql
+        EVENT_OBJECT_TABLE: worker
+              ACTION_ORDER: <span class="token number">1</span>
+          ACTION_CONDITION: <span class="token boolean">NULL</span>
+          ACTION_STATEMENT: <span class="token keyword">SET</span> <span class="token variable">@worker_salary</span> <span class="token operator">=</span> <span class="token variable">@worker_salary</span> <span class="token operator">+</span> NEW<span class="token punctuation">.</span>salary
+        ACTION_ORIENTATION: <span class="token keyword">ROW</span>
+             ACTION_TIMING: BEFORE
+ACTION_REFERENCE_OLD_TABLE: <span class="token boolean">NULL</span>
+ACTION_REFERENCE_NEW_TABLE: <span class="token boolean">NULL</span>
+  ACTION_REFERENCE_OLD_ROW: OLD
+  ACTION_REFERENCE_NEW_ROW: NEW
+                   CREATED: <span class="token number">2019</span><span class="token operator">-</span><span class="token number">12</span><span class="token operator">-</span><span class="token number">15</span> <span class="token number">23</span>:<span class="token number">58</span>:<span class="token number">32.99</span>
+                  SQL_MODE: ONLY_FULL_GROUP_BY<span class="token punctuation">,</span>STRICT_TRANS_TABLES<span class="token punctuation">,</span>NO_ZERO_IN_DATE<span class="token punctuation">,</span>NO_ZERO_DATE<span class="token punctuation">,</span>ERROR_FOR_DIVISION_BY_ZERO<span class="token punctuation">,</span>NO_AUTO_CREATE_USER<span class="token punctuation">,</span>NO_ENGINE_SUBSTITUTION
+                   <span class="token keyword">DEFINER</span>: root<span class="token variable">@localhost</span>
+      CHARACTER_SET_CLIENT: utf8
+      COLLATION_CONNECTION: utf8_general_ci
+        DATABASE_COLLATION: latin1_swedish_ci
+<span class="token number">1</span> <span class="token keyword">row</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
+</code></pre>
+</div><div class="cl-preview-section"><h3 id="删除触发器">3.4 删除触发器</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">在 MySQL 中做删除操作通常都会使用到 DROP 语句，对于触发器的删除来说，也不会是个例外。下面，我来给出删除触发器的语法和演示示例（需要注意，删除触发器需要有关联触发器的表的 Trigger 特权）：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- 删除触发器的语法</span>
+<span class="token keyword">DROP</span> <span class="token keyword">TRIGGER</span> <span class="token punctuation">[</span><span class="token keyword">IF</span> <span class="token keyword">EXISTS</span><span class="token punctuation">]</span> <span class="token punctuation">[</span>schema_name<span class="token punctuation">.</span><span class="token punctuation">]</span>trigger_name
+
+<span class="token comment">-- 删除 imooc_mysql 库中的 worker_salary_sum 触发器</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">DROP</span> <span class="token keyword">TRIGGER</span> <span class="token keyword">IF</span> <span class="token keyword">EXISTS</span> imooc_mysql<span class="token punctuation">.</span>worker_salary_sum<span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
+</code></pre>
+</div><div class="cl-preview-section"><h3 id="数据汇总案例实现">3.5 数据汇总案例实现</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">到目前为止，我们已经基本上掌握了触发器的思想和编写方法，那么，下面就使用触发器来解决数据汇总的第二个场景需求吧。等等，别着急去编写触发器，我们需要先去创建一张文件信息汇总表，创建语句如下：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- 文件汇总信息表</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token keyword">IF</span> <span class="token operator">NOT</span> <span class="token keyword">EXISTS</span> <span class="token punctuation">`</span>file_sum_info<span class="token punctuation">`</span> <span class="token punctuation">(</span>
+  <span class="token punctuation">`</span>pro_line<span class="token punctuation">`</span> <span class="token keyword">varchar</span><span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'产品线'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>upload_size<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> unsigned <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token number">0</span> <span class="token keyword">COMMENT</span> <span class="token string">'上传文件总量'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>delete_size<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> unsigned <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token number">0</span> <span class="token keyword">COMMENT</span> <span class="token string">'删除文件总量'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>upload_count<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> unsigned <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token number">0</span> <span class="token keyword">COMMENT</span> <span class="token string">'上传次数'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>delete_count<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> unsigned <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token number">0</span> <span class="token keyword">COMMENT</span> <span class="token string">'删除次数'</span><span class="token punctuation">,</span>
+  <span class="token keyword">PRIMARY</span> <span class="token keyword">KEY</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>pro_line<span class="token punctuation">`</span><span class="token punctuation">)</span>  
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span><span class="token operator">=</span><span class="token keyword">InnoDB</span> <span class="token keyword">DEFAULT</span> <span class="token keyword">CHARSET</span><span class="token operator">=</span>utf8 <span class="token keyword">COMMENT</span><span class="token operator">=</span><span class="token string">'文件汇总信息表'</span><span class="token punctuation">;</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">下面，我们需要创建三个触发器（插入、更新和删除）来关联 file_info 和 file_sum_info 表（需要注意，这两张表的更新过程是原子的，这是由触发器来保证的）。首先，创建插入触发器：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- 修改分隔符为 $$</span>
+<span class="token keyword">DELIMITER</span> $$
+<span class="token comment">-- 创建触发器 file_insert_trigger                                                       </span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TRIGGER</span> file_insert_trigger                                                   
+<span class="token comment">-- 在 file_info 表插入数据之后</span>
+<span class="token keyword">AFTER</span> <span class="token keyword">INSERT</span> <span class="token keyword">ON</span> file_info                                                               
+<span class="token comment">-- 对于每一行记录都执行触发器</span>
+<span class="token keyword">FOR EACH ROW</span>
+<span class="token comment">-- 触发器中存在多条语句，使用 BEGIN 和 END                                                                </span>
+<span class="token keyword">BEGIN</span>
+  <span class="token comment">-- 如果 file_sum_info 表中不存在当前产品线，则插入新记录，否则，更新原记录</span>
+  <span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> file_sum_info<span class="token punctuation">(</span>pro_line<span class="token punctuation">,</span> upload_size<span class="token punctuation">,</span> upload_count<span class="token punctuation">)</span> <span class="token keyword">VALUES</span><span class="token punctuation">(</span>NEW<span class="token punctuation">.</span>pro_line<span class="token punctuation">,</span> NEW<span class="token punctuation">.</span>size<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token keyword">ON</span> <span class="token keyword">DUPLICATE KEY</span>
+  <span class="token keyword">UPDATE</span> upload_size <span class="token operator">=</span> upload_size <span class="token operator">+</span> NEW<span class="token punctuation">.</span>size<span class="token punctuation">,</span> upload_count <span class="token operator">=</span> upload_count <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">;</span>         
+<span class="token keyword">END</span> $$
+<span class="token comment">-- 将分隔符修改回分号                                   </span>
+<span class="token keyword">DELIMITER</span> <span class="token punctuation">;</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">file_insert_trigger 触发器的思想非常简单：file_info 插入数据之后 “按需” 插入或修改 file_sum_info 表的记录。那么，对于 file_info 表更新的情况，我们也需要一个更新触发器：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- 修改分隔符为 $$</span>
+<span class="token keyword">DELIMITER</span> $$
+<span class="token comment">-- 创建触发器 file_update_trigger</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TRIGGER</span> file_update_trigger
+<span class="token comment">-- 在 file_info 表更新数据之后</span>
+<span class="token keyword">AFTER</span> <span class="token keyword">UPDATE</span> <span class="token keyword">ON</span> file_info
+<span class="token comment">-- 对于每一行记录都执行触发器</span>
+<span class="token keyword">FOR EACH ROW</span>
+<span class="token keyword">BEGIN</span>
+  <span class="token comment">-- 更新 file_sum_info 表的记录（pro_line 需要匹配）</span>
+  <span class="token keyword">UPDATE</span> file_sum_info <span class="token keyword">SET</span> upload_size <span class="token operator">=</span> upload_size <span class="token operator">+</span> NEW<span class="token punctuation">.</span>size <span class="token operator">-</span> OLD<span class="token punctuation">.</span>size <span class="token keyword">WHERE</span> pro_line <span class="token operator">=</span> NEW<span class="token punctuation">.</span>pro_line<span class="token punctuation">;</span>
+<span class="token keyword">END</span> $$
+<span class="token comment">-- 将分隔符修改回分号</span>
+<span class="token keyword">delimiter</span> <span class="token punctuation">;</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">最后，当 file_info 表删除记录时，file_sum_info 表也要做相应的更新，即创建一个删除触发器。如下所示：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- 修改分隔符为 $$</span>
+<span class="token keyword">DELIMITER</span> $$
+<span class="token comment">-- 创建触发器 file_delete_trigger</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TRIGGER</span> file_delete_trigger
+<span class="token comment">-- 在 file_info 表删除数据之后</span>
+<span class="token keyword">AFTER</span> <span class="token keyword">DELETE</span> <span class="token keyword">ON</span> file_info
+<span class="token comment">-- 对于每一行记录都执行触发器</span>
+<span class="token keyword">FOR EACH ROW</span>
+<span class="token keyword">BEGIN</span>
+  <span class="token comment">-- 更新 file_sum_info 表的记录（pro_line 需要匹配）</span>
+  <span class="token keyword">UPDATE</span> file_sum_info <span class="token keyword">SET</span> delete_size <span class="token operator">=</span> delete_size <span class="token operator">+</span> OLD<span class="token punctuation">.</span>Size<span class="token punctuation">,</span> delete_count <span class="token operator">=</span> delete_count <span class="token operator">+</span> <span class="token number">1</span> <span class="token keyword">WHERE</span> pro_line <span class="token operator">=</span> OLD<span class="token punctuation">.</span>pro_line<span class="token punctuation">;</span>
+<span class="token keyword">END</span> $$
+<span class="token comment">-- 将分隔符修改回分号</span>
+<span class="token keyword">delimiter</span> <span class="token punctuation">;</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">创建好触发器之后，我们来对 file_info 表做一些增删改查的工作（最好是先清空 file_info 和 file_sum_info 表的数据，以方便验证），验证下触发器是否好用。执行的流程以及注释信息如下所示：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- 插入第一条记录</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> file_info<span class="token punctuation">(</span><span class="token punctuation">`</span>name<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>pro_line<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>size<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token string">'宝马 X6'</span><span class="token punctuation">,</span> <span class="token string">'分众'</span><span class="token punctuation">,</span> <span class="token number">1024</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.02</span> sec<span class="token punctuation">)</span>
+
+<span class="token comment">-- 插入第二条记录</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> file_info<span class="token punctuation">(</span><span class="token punctuation">`</span>name<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>pro_line<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>size<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token string">'奔驰 C200'</span><span class="token punctuation">,</span> <span class="token string">'新潮'</span><span class="token punctuation">,</span> <span class="token number">512</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.02</span> sec<span class="token punctuation">)</span>
+
+<span class="token comment">-- 插入第三条记录，与第一条记录属于同一个产品线</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> file_info<span class="token punctuation">(</span><span class="token punctuation">`</span>name<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>pro_line<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>size<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span><span class="token punctuation">(</span><span class="token string">'奥迪 Q7'</span><span class="token punctuation">,</span> <span class="token string">'分众'</span><span class="token punctuation">,</span> <span class="token number">2000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
+
+<span class="token comment">-- 查看下 file_sum_info 表的数据（应该有两条记录）</span>
+<span class="token comment">-- 记录数、upload_size 和 upload_count 都符合预期</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> file_sum_info<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">----------+-------------+-------------+--------------+--------------+</span>
+<span class="token operator">|</span> pro_line <span class="token operator">|</span> upload_size <span class="token operator">|</span> delete_size <span class="token operator">|</span> upload_count <span class="token operator">|</span> delete_count <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">----------+-------------+-------------+--------------+--------------+</span>
+<span class="token operator">|</span> 分众     <span class="token operator">|</span>        <span class="token number">3024</span> <span class="token operator">|</span>           <span class="token number">0</span> <span class="token operator">|</span>            <span class="token number">2</span> <span class="token operator">|</span>            <span class="token number">0</span> <span class="token operator">|</span>
+<span class="token operator">|</span> 新潮     <span class="token operator">|</span>         <span class="token number">512</span> <span class="token operator">|</span>           <span class="token number">0</span> <span class="token operator">|</span>            <span class="token number">1</span> <span class="token operator">|</span>            <span class="token number">0</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">----------+-------------+-------------+--------------+--------------+</span>
+<span class="token number">2</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+
+<span class="token comment">-- 更新记录</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">UPDATE</span> file_info <span class="token keyword">SET</span> size <span class="token operator">=</span> <span class="token number">1000</span> <span class="token keyword">WHERE</span> name <span class="token operator">=</span> <span class="token string">'奔驰 C200'</span> <span class="token operator">AND</span> pro_line <span class="token operator">=</span> <span class="token string">'新潮'</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.02</span> sec<span class="token punctuation">)</span>
+<span class="token keyword">Rows</span> <span class="token keyword">matched</span>: <span class="token number">1</span>  Changed: <span class="token number">1</span>  <span class="token keyword">Warnings</span>: <span class="token number">0</span>
+
+<span class="token comment">-- 查看下 file_sum_info 表的数据</span>
+<span class="token comment">-- pro_line 为新潮的记录的 upload_size 符合预期</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> file_sum_info<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">----------+-------------+-------------+--------------+--------------+</span>
+<span class="token operator">|</span> pro_line <span class="token operator">|</span> upload_size <span class="token operator">|</span> delete_size <span class="token operator">|</span> upload_count <span class="token operator">|</span> delete_count <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">----------+-------------+-------------+--------------+--------------+</span>
+<span class="token operator">|</span> 分众     <span class="token operator">|</span>        <span class="token number">3024</span> <span class="token operator">|</span>           <span class="token number">0</span> <span class="token operator">|</span>            <span class="token number">2</span> <span class="token operator">|</span>            <span class="token number">0</span> <span class="token operator">|</span>
+<span class="token operator">|</span> 新潮     <span class="token operator">|</span>        <span class="token number">1000</span> <span class="token operator">|</span>           <span class="token number">0</span> <span class="token operator">|</span>            <span class="token number">1</span> <span class="token operator">|</span>            <span class="token number">0</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">----------+-------------+-------------+--------------+--------------+</span>
+<span class="token number">2</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+
+<span class="token comment">-- 删除数据</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">DELETE</span> <span class="token keyword">FROM</span> file_info <span class="token keyword">WHERE</span> name <span class="token operator">=</span> <span class="token string">'奥迪 Q7'</span> <span class="token operator">AND</span> pro_line <span class="token operator">=</span> <span class="token string">'分众'</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">1</span> <span class="token keyword">row</span> affected <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
+
+<span class="token comment">-- 查看下 file_sum_info 表的数据</span>
+<span class="token comment">-- pro_line 为分众的记录的 delete_size、delete_count 符合预期</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> file_sum_info<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">----------+-------------+-------------+--------------+--------------+</span>
+<span class="token operator">|</span> pro_line <span class="token operator">|</span> upload_size <span class="token operator">|</span> delete_size <span class="token operator">|</span> upload_count <span class="token operator">|</span> delete_count <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">----------+-------------+-------------+--------------+--------------+</span>
+<span class="token operator">|</span> 分众     <span class="token operator">|</span>        <span class="token number">3024</span> <span class="token operator">|</span>        <span class="token number">2000</span> <span class="token operator">|</span>            <span class="token number">2</span> <span class="token operator">|</span>            <span class="token number">1</span> <span class="token operator">|</span>
+<span class="token operator">|</span> 新潮     <span class="token operator">|</span>        <span class="token number">1000</span> <span class="token operator">|</span>           <span class="token number">0</span> <span class="token operator">|</span>            <span class="token number">1</span> <span class="token operator">|</span>            <span class="token number">0</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">----------+-------------+-------------+--------------+--------------+</span>
+<span class="token number">2</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">经过了以上的验证流程，可以确定我们的触发器是正确且可用的。而且可以看出，在 “某些情况下”，触发器也是非常好用的。所以，多去想一想、查一查，看看你当前的工作使用触发器是否可行。</p>
+</div><div class="cl-preview-section"><h2 id="总结" style="font-size: 30px;">4 总结</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">数据汇总这类需求通常都是类似的，所以，熟练掌握它的思想和实现是一劳永逸的。我在这一节里提到的两个场景也是出自我在工作中遇到的需求，同时，解决方案我也已经做了详细的解读。当然，你可以对它们修改，以便适用于你遇到的场景，或者干脆你有更好的实现方法，我们也可以一起交流学习。</p>
+</div><div class="cl-preview-section"><h2 id="问题" style="font-size: 30px;">5 问题</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">对于 OLAP 型的数据汇总表，如果让你来做，你会怎样做数据汇总并存储呢 ？<br><br>
+对于 OLAP 型的数据汇总表，应该在什么时机做数据插入呢 ？<br><br>
+你使用过触发器吗 ？是怎样使用的呢 ？或者说，你觉得触发器适用于哪些场景呢 ？<br><br>
+也许你听说过，触发器的效率比较低，你知道这是为什么吗 ？</p>
+</div><div class="cl-preview-section"><h2 id="参考资料" style="font-size: 30px;">6 参考资料</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">《高性能 MySQL（第三版）》<br><br>
+<a href="https://dev.mysql.com/doc/refman/5.7/en/create-trigger.html">MySQL 官方文档：CREATE TRIGGER Statement</a><br><br>
+<a href="https://dev.mysql.com/doc/refman/5.7/en/triggers.html">MySQL 官方文档：Using Triggers</a><br><br>
+<a href="https://dev.mysql.com/doc/refman/5.7/en/faqs-triggers.html">MySQL 官方文档：MySQL 5.7 FAQ: Triggers</a><br><br>
+<a href="https://dev.mysql.com/doc/refman/5.7/en/show-triggers.html">MySQL 官方文档：SHOW TRIGGERS Statement</a><br><br>
+<a href="https://dev.mysql.com/doc/refman/5.7/en/drop-trigger.html">MySQL 官方文档：DROP TRIGGER Statement</a><br><br>
+<a href="https://dev.mysql.com/doc/refman/5.7/en/triggers-table.html">MySQL 官方文档：The INFORMATION_SCHEMA TRIGGERS Table</a></p>
+</div>}
+                        </div>
+                    </div>
+                                            <!-- 买过的阅读 -->
+                        <div class="art-next-prev clearfix">
+                                                                                                <!-- 已买且开放 或者可以试读 -->
+                                    <a href="/read/71/article/1791">
+                                                                    <div class="prev l clearfix">
+                                        <div class="icon l">
+                                            <i class="imv2-arrow3_l"></i>
+                                        </div>
+                                        <p>
+                                            19 听过存储过程，但是你会用吗？
+                                        </p>
+                                    </div>
+                                </a>
+                                                                                                                            <!-- 已买且开放 或者可以试读 -->
+                                    <a href="/read/71/article/1832">
+                                                                    <div class="next r clearfix">
+                                        <p>
+                                            21 经常听到分库分表，但是怎样分呢？
+                                        </p>
+                                        <div class="icon r">
+                                            <i class="imv2-arrow3_r"></i>
+                                        </div>
+
+                                    </div>
+                                </a>
+                                                    </div>
+                                    </div>
+                <div class="comments-con js-comments-con" id="coments_con">
+                </div>
+
+                
+            </div>
+            
+            
+            
+
+        </div>
+    </div>
+</div>
+
+<div class="modal modal-jiaQun-new hide" id="modal-jiaQun">
+    <div class="inner" style="">
+        <div class="modal-close js-close-jiaQun">
+            <i class="imv2-close"></i>
+        </div>
+        <div class="content">
+            <img src="https://img2.sycdn.imooc.com/5eba10270001392b05330597.jpg">
+            <div class="right-info">
+                <div class="title">
+                    扫码加入慕课前沿技术核心用户群
+                </div>
+                <div class="desc">
+                                            <p class="mb6">验证信息：<span id="joincode">2010291942557129</span><span class="copy js-copy-joincode">复制</span></p>
+                                        <p class="mb6">QQ讨论群号：729941811</p>
+                                            <p>QQ群URL：<a href="https://jq.qq.com/?_wv=1027&amp;k=5WJLMxV" target="_blank">点击访问</a></p>
+                                    </div>
+            </div>
+            <p class="tip">若遇到搜索不到QQ群或加群失败，请联系客服邮箱:kf@imooc.com</p>
+        </div>
+    </div>
+</div>
+ 
+<!-- 专栏介绍页专栏评价 -->
+
+<!-- 专栏介绍页底部三条评价 -->
+
+<!-- 专栏阅读页弹层目录和介绍页页面目录 -->
+
+<!-- 专栏阅读页发布回复 -->
+
+<!-- 专栏阅读页发布评论 -->
+
+<!-- 专栏阅读页底部评论 -->
+
+<!-- 专栏阅读 单个 评论 -->
+
+<!-- 新增回复和展开三条以外回复 -->
+
+<!-- 立即订阅的弹窗 -->
+
+
+
+
+
+
+
+
+
+
+
+
+</div></body></html>

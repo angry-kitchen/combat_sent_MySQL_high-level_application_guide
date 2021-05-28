@@ -1,0 +1,574 @@
+<html><head><meta charset="utf-8"><title>24 大数据量插入遇到瓶颈，我该怎样做性能优化呢？-慕课专栏</title>
+			<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+			<meta name="renderer" content="webkit">
+			<meta property="qc:admins" content="77103107776157736375">
+			<meta property="wb:webmaster" content="c4f857219bfae3cb">
+			<meta http-equiv="Access-Control-Allow-Origin" content="*">
+			<meta http-equiv="Cache-Control" content="no-transform ">
+			<meta http-equiv="Cache-Control" content="no-siteapp">
+			<link rel="apple-touch-icon" sizes="76x76" href="https://www.imooc.com/static/img/common/touch-icon-ipad.png">
+			<link rel="apple-touch-icon" sizes="120x120" href="https://www.imooc.com/static/img/common/touch-icon-iphone-retina.png">
+			<link rel="apple-touch-icon" sizes="152x152" href="https://www.imooc.com/static/img/common/touch-icon-ipad-retina.png">
+			<link href="https://moco.imooc.com/captcha/style/captcha.min.css" rel="stylesheet">
+			<link rel="stylesheet" href="https://www.imooc.com/static/moco/v1.0/dist/css/moco.min.css?t=201907021539" type="text/css">
+			<link rel="stylesheet" href="https://www.imooc.com/static/lib/swiper/swiper-3.4.2.min.css?t=201907021539">
+			<link rel="stylesheet" href="https://static.mukewang.com/static/css/??base.css,common/common-less.css?t=2.5,column/zhuanlanChapter-less.css?t=2.5,course/inc/course_tipoff-less.css?t=2.5?v=201907051055" type="text/css">
+			<link charset="utf-8" rel="stylesheet" href="https://www.imooc.com/static/lib/ueditor/themes/imooc/css/ueditor.css?v=201907021539"><link rel="stylesheet" href="https://www.imooc.com/static/lib/baiduShare/api/css/share_style0_16.css?v=6aba13f0.css"></head>
+			<body><div id="main">
+
+
+<div class="main-con hide-menu">
+    <!-- 左侧菜单 & 索引 -->
+    
+    <div class="right-content" style="padding-left: 0px;">
+        <div class="container clearfix" id="top" style="width: 1134px; display: block;">
+            
+            
+            <div class="center_con js-center_con l" style="width: 1134px;">
+                <div class="article-con">
+                                            <!-- 买过的阅读 -->
+                        
+
+                    
+                    <div class="art-title" style="margin-top: 0px;">
+                        24 大数据量插入遇到瓶颈，我该怎样做性能优化呢？
+                    </div>
+                    <div class="art-info clearfix">
+                        
+                        <span class="l">
+                            更新时间：2020-05-11 09:27:46
+                        </span>
+                    </div>
+                    <div class="art-top">
+                                                <img src="https://img3.sycdn.imooc.com/5ea565e10001e57006400391.jpg" alt="">
+                                                                        <div class="famous-word-box">
+                            <img src="https://www.imooc.com/static/img/column/bg-l.png" alt="" class="bg1 bg">
+                            <img src="https://www.imooc.com/static/img/column/bg-r.png" alt="" class="bg2 bg">
+                            <div class="famous-word">如果说我比别人看得要远一点，那是因为我站在巨人的肩上。——牛顿<p></p></div>
+                        </div>
+                                            </div>
+                    <div class="art-content js-lookimg">
+                        <div id="article_content">
+                            <div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">数据迁移、数据恢复往往都需要做大数据量的插入操作，但是，不同的插入方法对性能的影响也是非常大的。这一节里，我将会分析数据插入耗时的因素，以及常见的数据插入方法。通过比对不同插入方法的性能以及它们各自的优缺点，才能确定哪一种才是你所需要的。</p>
+</div><div class="cl-preview-section"><h2 id="插入数据分析" style="font-size: 30px;">1. 插入数据分析</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">我们在客户端执行一条数据插入命令就可以实现 MySQL 服务器的插入操作，但是，这背后其实是做了很多工作的。这里，我们先来看一看插入数据影响耗时的因素有哪些。之后，再去介绍下 MySQL 支持的数据插入方法。</p>
+</div><div class="cl-preview-section"><h3 id="插入数据的过程">1.1 插入数据的过程</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">在 MySQL 中，能够插入数据是很多个组件（或流程）共同配合的成果，且每个组件所耗时的比例也是不相同的。我们先来看一看插入数据都会涉及哪些过程：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;">服务器与客户端建立连接，耗时占比最多，大约 30%</li>
+<li style="font-size: 20px; line-height: 38px;">发送插入数据到服务器，需要通过网络连接，耗时大约 20%</li>
+<li style="font-size: 20px; line-height: 38px;">查询分析，包括对 SQL 语法、数据、权限等校验，耗时大约 20%</li>
+<li style="font-size: 20px; line-height: 38px;">插入记录到数据表中，耗时大约 10%</li>
+<li style="font-size: 20px; line-height: 38px;">更新索引，耗时大约 10%</li>
+<li style="font-size: 20px; line-height: 38px;">关闭服务器与客户端的连接，耗时大约 10%</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">但是，需要注意，这里所说的是插入一条数据记录，对于大数据量的插入操作来说，插入记录和更新索引肯定是最为耗时的地方。</p>
+</div><div class="cl-preview-section"><h3 id="插入数据有哪些常用方法">1.2 插入数据有哪些常用方法</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">MySQL 提供了多种方式用于插入数据，下面，我来总结一些常见的方法：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;"><strong>顺序 INSERT 插入数据</strong>：一次执行一条数据记录的插入</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>批量 INSERT 插入数据</strong>：一次执行多条数据记录的插入</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>LOAD DATA INFILE 插入数据</strong>：从文本文件中执行数据记录的插入</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">接下来，我们就来看一看这几种方法怎样去应用，以及对它们插入耗时的分析。以此，来确定哪一种方法更好，哪一种方法更适合你的场景。</p>
+</div><div class="cl-preview-section"><h2 id="顺序-insert-插入数据" style="font-size: 30px;">2. 顺序 INSERT 插入数据</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">为了更好的分析插入性能，我这里以 Java 语言去编写并执行插入过程，对于其他语言也都是类似的。这里，我以 worker 表来做演示，首先看一看它的结构：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql">mysql<span class="token operator">&gt;</span> <span class="token keyword">DESC</span> worker<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+---------------------+------+-----+---------+----------------+</span>
+<span class="token operator">|</span> Field   <span class="token operator">|</span> <span class="token keyword">Type</span>                <span class="token operator">|</span> <span class="token boolean">Null</span> <span class="token operator">|</span> <span class="token keyword">Key</span> <span class="token operator">|</span> <span class="token keyword">Default</span> <span class="token operator">|</span> Extra          <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+---------------------+------+-----+---------+----------------+</span>
+<span class="token operator">|</span> id      <span class="token operator">|</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> unsigned <span class="token operator">|</span> <span class="token keyword">NO</span>   <span class="token operator">|</span> PRI <span class="token operator">|</span> <span class="token boolean">NULL</span>    <span class="token operator">|</span> <span class="token keyword">auto_increment</span> <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token keyword">type</span>    <span class="token operator">|</span> char<span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">)</span>            <span class="token operator">|</span> <span class="token keyword">NO</span>   <span class="token operator">|</span> MUL <span class="token operator">|</span>         <span class="token operator">|</span>                <span class="token operator">|</span>
+<span class="token operator">|</span> name    <span class="token operator">|</span> char<span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">)</span>            <span class="token operator">|</span> <span class="token keyword">NO</span>   <span class="token operator">|</span>     <span class="token operator">|</span> <span class="token boolean">NULL</span>    <span class="token operator">|</span>                <span class="token operator">|</span>
+<span class="token operator">|</span> salary  <span class="token operator">|</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> unsigned <span class="token operator">|</span> YES  <span class="token operator">|</span>     <span class="token operator">|</span> <span class="token boolean">NULL</span>    <span class="token operator">|</span>                <span class="token operator">|</span>
+<span class="token operator">|</span> version <span class="token operator">|</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span>          <span class="token operator">|</span> <span class="token keyword">NO</span>   <span class="token operator">|</span>     <span class="token operator">|</span> <span class="token number">0</span>       <span class="token operator">|</span>                <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+---------------------+------+-----+---------+----------------+</span>
+<span class="token number">5</span> <span class="token keyword">rows</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">由于插入数据量较大，所以，可以忽略字段取值的复杂度。同时，不仅仅对于 “顺序 INSERT”，其他的几种数据插入方法也一样会使用 worker 表来做对比测试。</p>
+</div><div class="cl-preview-section"><h3 id="插入过程详解">2.1 插入过程详解</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">想要获取更加有代表性的数据，就需要插入更多的数据量，那么，直接在 MySQL 客户端中执行 INSERT 语句是不合适的。我这里直接以测试用例（SpringBoot、JUnit）的形式完成代码，当然，你也可以写成任意的形式。首先，我们需要去定义一些常量：</p>
+</div><div class="cl-preview-section"><pre class="  language-java"><code class="prism  language-java"><span class="token comment">// MySQL 连接信息、用户名、密码定义</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String URL <span class="token operator">=</span> <span class="token string">"jdbc:mysql://localhost:3306/imooc_mysql"</span><span class="token punctuation">;</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String USERNAME <span class="token operator">=</span> <span class="token string">"root"</span><span class="token punctuation">;</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String PASSWORD <span class="token operator">=</span> <span class="token string">"root"</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 插入语句格式化定义</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String INSERT_SQL <span class="token operator">=</span> <span class="token string">"INSERT INTO `worker`(type, name, salary, version) "</span> <span class="token operator">+</span>
+        <span class="token string">"VALUES ('%s', '%s', %d, %d)"</span><span class="token punctuation">;</span>
+
+<span class="token comment">// worker 表各字段取值定义</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> List<span class="token operator">&lt;</span>String<span class="token operator">&gt;</span> TYPES <span class="token operator">=</span> Arrays<span class="token punctuation">.</span><span class="token function">asList</span><span class="token punctuation">(</span><span class="token string">"A"</span><span class="token punctuation">,</span> <span class="token string">"B"</span><span class="token punctuation">,</span> <span class="token string">"C"</span><span class="token punctuation">,</span> <span class="token string">"D"</span><span class="token punctuation">,</span> <span class="token string">"E"</span><span class="token punctuation">,</span> <span class="token string">"F"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> List<span class="token operator">&lt;</span>String<span class="token operator">&gt;</span> NAMES <span class="token operator">=</span> Arrays<span class="token punctuation">.</span><span class="token function">asList</span><span class="token punctuation">(</span><span class="token string">"G"</span><span class="token punctuation">,</span> <span class="token string">"H"</span><span class="token punctuation">,</span> <span class="token string">"I"</span><span class="token punctuation">,</span> <span class="token string">"J"</span><span class="token punctuation">,</span> <span class="token string">"K"</span><span class="token punctuation">,</span> <span class="token string">"L"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> List<span class="token operator">&lt;</span>Integer<span class="token operator">&gt;</span> SALARYS <span class="token operator">=</span> Arrays<span class="token punctuation">.</span><span class="token function">asList</span><span class="token punctuation">(</span><span class="token number">1000</span><span class="token punctuation">,</span> <span class="token number">2000</span><span class="token punctuation">,</span> <span class="token number">3000</span><span class="token punctuation">,</span> <span class="token number">4000</span><span class="token punctuation">,</span> <span class="token number">5000</span><span class="token punctuation">,</span> <span class="token number">6000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> List<span class="token operator">&lt;</span>Integer<span class="token operator">&gt;</span> VERSIONS <span class="token operator">=</span> Arrays<span class="token punctuation">.</span><span class="token function">asList</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 随机数对象定义</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> Random random <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Random</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">接下来，编写插入数据的逻辑。很显然，对于顺序 INSERT 操作，我们使用一个 for 循环就可以完成。代码及其注释如下所示：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">/**
+ * &lt;h2&gt;顺序插入数据逻辑&lt;/h2&gt;
+ * @param count 插入条数
+ * */</span>
+private void insertToMySQL<span class="token punctuation">(</span><span class="token keyword">int</span> count<span class="token punctuation">)</span> {
+
+    try {
+        <span class="token comment">// JDBC 与 MySQL 建立连接</span>
+        Class<span class="token punctuation">.</span>forName<span class="token punctuation">(</span><span class="token string">"com.mysql.jdbc.Driver"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Connection conn <span class="token operator">=</span> DriverManager<span class="token punctuation">.</span>getConnection<span class="token punctuation">(</span>URL<span class="token punctuation">,</span> USERNAME<span class="token punctuation">,</span> PASSWORD<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Statement statement <span class="token operator">=</span> conn<span class="token punctuation">.</span>createStatement<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 计时器定义, 并开始计时</span>
+        StopWatch stopWatch <span class="token operator">=</span> new StopWatch<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        stopWatch<span class="token punctuation">.</span><span class="token keyword">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// for 循环构造 INSERT 语句, 并执行语句, 执行的次数由参数 count 控制</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> count<span class="token punctuation">;</span> i<span class="token operator">+</span><span class="token operator">+</span><span class="token punctuation">)</span> {
+            String sql <span class="token operator">=</span> String<span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span>
+                    INSERT_SQL<span class="token punctuation">,</span>
+                    <span class="token keyword">TYPES</span><span class="token punctuation">.</span>get<span class="token punctuation">(</span>random<span class="token punctuation">.</span>nextInt<span class="token punctuation">(</span><span class="token keyword">TYPES</span><span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                    NAMES<span class="token punctuation">.</span>get<span class="token punctuation">(</span>random<span class="token punctuation">.</span>nextInt<span class="token punctuation">(</span>NAMES<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                    SALARYS<span class="token punctuation">.</span>get<span class="token punctuation">(</span>random<span class="token punctuation">.</span>nextInt<span class="token punctuation">(</span>SALARYS<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                    VERSIONS<span class="token punctuation">.</span>get<span class="token punctuation">(</span>random<span class="token punctuation">.</span>nextInt<span class="token punctuation">(</span>VERSIONS<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+            <span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            statement<span class="token punctuation">.</span>executeUpdate<span class="token punctuation">(</span>sql<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        }
+
+        statement<span class="token punctuation">.</span><span class="token keyword">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 计时器停止计时</span>
+        stopWatch<span class="token punctuation">.</span>stop<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 打印执行耗时日志</span>
+        log<span class="token punctuation">.</span>info<span class="token punctuation">(</span><span class="token string">"time elapsed for {} inserts: {}s"</span><span class="token punctuation">,</span> count<span class="token punctuation">,</span> stopWatch<span class="token punctuation">.</span>getTotalTimeSeconds<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        conn<span class="token punctuation">.</span><span class="token keyword">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    } catch<span class="token punctuation">(</span>SQLException <span class="token operator">|</span> ClassNotFoundException <span class="token number">e</span><span class="token punctuation">)</span> {
+        <span class="token number">e</span><span class="token punctuation">.</span>printStackTrace<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    }
+}
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">很明显，我们只需要调用 insertToMySQL 方法，并传递想要插入的 count 参数就可以了。下面，我们依次执行 100、1000、10000 条（这些数字不具有特殊含义，当然，你可以任意指定。但是，为了方便对比，接下来的插入方法也要插入相同体量的数据）INSERT 操作。代码如下：</p>
+</div><div class="cl-preview-section"><pre class="  language-java"><code class="prism  language-java"><span class="token annotation punctuation">@Test</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">test100Insert</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+    <span class="token function">insertToMySQL</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token annotation punctuation">@Test</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">test1000Insert</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+    <span class="token function">insertToMySQL</span><span class="token punctuation">(</span><span class="token number">1000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token annotation punctuation">@Test</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">test10000Insert</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+    <span class="token function">insertToMySQL</span><span class="token punctuation">(</span><span class="token number">10000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+</div><div class="cl-preview-section"><h3 id="插入耗时分析">2.2 插入耗时分析</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">执行上述的插入方法，我们可以得到每一次插入数据的打印日志，也就得到了每一次的操作耗时，总结如下表所示：</p>
+</div><div class="cl-preview-section"><div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>插入条数</th>
+<th>耗时</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100</td>
+<td>1.195s</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>12.091s</td>
+</tr>
+<tr>
+<td>10000</td>
+<td>124.163s</td>
+</tr>
+</tbody>
+</table>
+</div></div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">可以看到，顺序 INSERT 的耗时是线性增长的，随着插入数据量的增大，操作过程是非常缓慢的。这种插入方式无疑是比较慢的（对于软件工程来说，线性和指数增长都是低效的），它所耗时的地方在于：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;">每一次 INSERT 都需要一次网络 IO</li>
+<li style="font-size: 20px; line-height: 38px;">每一次 INSERT 都需要一次 SQL 语句解析</li>
+<li style="font-size: 20px; line-height: 38px;">每一次 INSERT 都需要一次数据写入（先写入缓冲区，再刷写到磁盘）</li>
+<li style="font-size: 20px; line-height: 38px;">每一次 INSERT 都需要一次索引的更新</li>
+<li style="font-size: 20px; line-height: 38px;">每一次 INSERT 都可能需要多次日志记录过程（查询日志、Binlog 日志等等）</li>
+<li style="font-size: 20px; line-height: 38px;">每一次 INSERT 都需要一次事务的创建与提交</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">综上所述，正是由于每一次 INSERT 都需要 “经历” 很多个阶段，所以才导致了大数据量插入性能很低。在实际的企业级开发中，涉及到大数据量插入问题时，选择这种方式是极不明智的做法。</p>
+</div><div class="cl-preview-section"><h2 id="批量-insert-插入数据" style="font-size: 30px;">3. 批量 INSERT 插入数据</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">INSERT 语句除了可以一次插入一条数据之外，还可以一次插入多条数据，且它们的语法也是相似的。例如，通过 INSERT 语句一次性往 worker 表中插入三条数据，可以执行命令：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>worker<span class="token punctuation">`</span> <span class="token punctuation">(</span><span class="token punctuation">`</span><span class="token keyword">type</span><span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>name<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>salary<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>version<span class="token punctuation">`</span><span class="token punctuation">)</span>
+<span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token string">'B'</span><span class="token punctuation">,</span> <span class="token string">'H'</span><span class="token punctuation">,</span> <span class="token number">2000</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token string">'C'</span><span class="token punctuation">,</span> <span class="token string">'I'</span><span class="token punctuation">,</span> <span class="token number">3000</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token string">'C'</span><span class="token punctuation">,</span> <span class="token string">'L'</span><span class="token punctuation">,</span> <span class="token number">6000</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">但是，如果想要通过 INSERT 一次性插入大批量的数据，就需要去考虑 MySQL 中的 max_allowed_packet 参数。这个参数会限制 MySQL 服务器接受的数据包大小，如果超过这个值时会导致大批量数据写入或更新失败。我们可以把它设置为一个比较大的值，例如：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token comment">-- 设置服务器最大接受的数据包是 200M，且生效范围是 GLOBAL</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SET</span> <span class="token keyword">GLOBAL</span> max_allowed_packet <span class="token operator">=</span> <span class="token number">2</span> <span class="token operator">*</span> <span class="token number">100</span> <span class="token operator">*</span> <span class="token number">1024</span> <span class="token operator">*</span> <span class="token number">1024</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">0</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+
+<span class="token comment">-- 检验变量的值是否符合预期（需要退出当前 session，重新登录）</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SHOW</span> VARIABLES <span class="token operator">LIKE</span> <span class="token string">'max_allowed_packet'</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">--------------------+-----------+</span>
+<span class="token operator">|</span> Variable_name      <span class="token operator">|</span> <span class="token keyword">Value</span>     <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">--------------------+-----------+</span>
+<span class="token operator">|</span> max_allowed_packet <span class="token operator">|</span> <span class="token number">209715200</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">--------------------+-----------+</span>
+<span class="token number">1</span> <span class="token keyword">row</span> <span class="token operator">in</span> <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+</code></pre>
+</div><div class="cl-preview-section"><h3 id="插入过程详解-1">3.1 插入过程详解</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">由于基本的常量（MySQL Url、用户名、密码等等）都已经定义了，所以，我们只需要去完成插入逻辑就可以了。其实，聪明的你一定可以想到，插入逻辑的核心一定是构造批量 INSERT 语句。代码和注释如下：</p>
+</div><div class="cl-preview-section"><pre class="  language-java"><code class="prism  language-java"><span class="token comment">// 批量插入语句前缀</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String BATCH_INSERT_SQL_PREFIX <span class="token operator">=</span> <span class="token string">"INSERT INTO `worker`(type, name, salary, version) "</span> <span class="token operator">+</span>
+        <span class="token string">"VALUES"</span><span class="token punctuation">;</span>
+<span class="token comment">// 批量插入语句后缀</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String BATCH_INSERT_SQL_SUFFIX <span class="token operator">=</span> <span class="token string">" ('%s', '%s', %d, %d)"</span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &lt;h2&gt;批量插入数据逻辑&lt;/h2&gt;
+ * @param count 插入条数
+ * */</span>
+<span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">batchInsertToMySQL</span><span class="token punctuation">(</span><span class="token keyword">int</span> count<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+    <span class="token keyword">try</span> <span class="token punctuation">{</span>
+        <span class="token comment">// JDBC 与 MySQL 建立连接</span>
+        Class<span class="token punctuation">.</span><span class="token function">forName</span><span class="token punctuation">(</span><span class="token string">"com.mysql.jdbc.Driver"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Connection conn <span class="token operator">=</span> DriverManager<span class="token punctuation">.</span><span class="token function">getConnection</span><span class="token punctuation">(</span>URL<span class="token punctuation">,</span> USERNAME<span class="token punctuation">,</span> PASSWORD<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Statement statement <span class="token operator">=</span> conn<span class="token punctuation">.</span><span class="token function">createStatement</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        StringBuilder sb <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">StringBuilder</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// for 循环构造插入列值语句, 执行的次数由参数 count 控制</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> count<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            sb<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span>
+                    String<span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span>
+                            BATCH_INSERT_SQL_SUFFIX<span class="token punctuation">,</span>
+                            TYPES<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>random<span class="token punctuation">.</span><span class="token function">nextInt</span><span class="token punctuation">(</span>TYPES<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                            NAMES<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>random<span class="token punctuation">.</span><span class="token function">nextInt</span><span class="token punctuation">(</span>NAMES<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                            SALARYS<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>random<span class="token punctuation">.</span><span class="token function">nextInt</span><span class="token punctuation">(</span>SALARYS<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                            VERSIONS<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>random<span class="token punctuation">.</span><span class="token function">nextInt</span><span class="token punctuation">(</span>VERSIONS<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                    <span class="token punctuation">)</span>
+            <span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 最后一个列值不需要加分号</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>i <span class="token operator">+</span> <span class="token number">1</span> <span class="token operator">&lt;</span> count<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                sb<span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token string">","</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token comment">// 计时器定义, 并开始计时</span>
+        StopWatch stopWatch <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">StopWatch</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        stopWatch<span class="token punctuation">.</span><span class="token function">start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 执行批量插入语句</span>
+        statement<span class="token punctuation">.</span><span class="token function">executeUpdate</span><span class="token punctuation">(</span>BATCH_INSERT_SQL_PREFIX <span class="token operator">+</span> sb<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        statement<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 计时器停止计时</span>
+        stopWatch<span class="token punctuation">.</span><span class="token function">stop</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 打印执行耗时日志</span>
+        log<span class="token punctuation">.</span><span class="token function">info</span><span class="token punctuation">(</span><span class="token string">"time elapsed for {} inserts: {}s"</span><span class="token punctuation">,</span> count<span class="token punctuation">,</span> stopWatch<span class="token punctuation">.</span><span class="token function">getTotalTimeSeconds</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        conn<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">catch</span><span class="token punctuation">(</span>SQLException <span class="token operator">|</span> ClassNotFoundException e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">同样，类似于顺序插入，我们也只需要调用 batchInsertToMySQL 方法，并传递想要插入的 count 参数就可以了。下面，我们依次执行100、1000、10000条数据的批量 INSERT 操作。代码如下：</p>
+</div><div class="cl-preview-section"><pre class="  language-java"><code class="prism  language-java"><span class="token annotation punctuation">@Test</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">test100BatchInsert</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+    <span class="token function">batchInsertToMySQL</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token annotation punctuation">@Test</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">test1000BatchInsert</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+    <span class="token function">batchInsertToMySQL</span><span class="token punctuation">(</span><span class="token number">1000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token annotation punctuation">@Test</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">test10000BatchInsert</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+    <span class="token function">batchInsertToMySQL</span><span class="token punctuation">(</span><span class="token number">10000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+</div><div class="cl-preview-section"><h3 id="插入耗时分析-1">3.2 插入耗时分析</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">执行以上三个测试用例，我们可以惊讶的发现它们的耗时（可以从打印的日志中得到）都是非常低的。总结如下表所示：</p>
+</div><div class="cl-preview-section"><div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>插入条数</th>
+<th>耗时</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100</td>
+<td>0.033s</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>0.051s</td>
+</tr>
+<tr>
+<td>10000</td>
+<td>0.504s</td>
+</tr>
+</tbody>
+</table>
+</div></div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">其实，只要对照顺序插入而言，批量插入还是非常好理解的。这种方式效率高的原因主要是合并了日志、写入次数、网络往返 IO 以及事务，它将多次的执行过程变成了一次执行过程。主要的耗时是客户端到服务器的大数据量传输以及数据写入（表数据以及表索引）。正是由于批量执行的高效性，它也成为企业级开发中普遍采用的方式。</p>
+</div><div class="cl-preview-section"><h2 id="load-data-infile-插入数据" style="font-size: 30px;">4. LOAD DATA INFILE 插入数据</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">MySQL 官方对 <code>LOAD DATA INFILE</code> 的描述是：用于高速的从一个文本文件中读取行，并把它写入数据表中。如果我们不想编写代码，且恰好手边有这样的一份文本文件，可以尝试考虑这种方式去完成大批量的数据插入。接下来，我们去看一看它的使用方法以及相关分析。</p>
+</div><div class="cl-preview-section"><h3 id="插入过程详解-2">4.1 插入过程详解</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">由于它是 MySQL 提供的一种功能，我们先来看一看它的语法：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token keyword">LOAD</span> <span class="token keyword">DATA</span>
+    <span class="token punctuation">[</span>LOW_PRIORITY <span class="token operator">|</span> CONCURRENT<span class="token punctuation">]</span> <span class="token punctuation">[</span><span class="token keyword">LOCAL</span><span class="token punctuation">]</span>
+    <span class="token keyword">INFILE</span> <span class="token string">'file_name'</span>
+    <span class="token punctuation">[</span>REPLACE <span class="token operator">|</span> <span class="token keyword">IGNORE</span><span class="token punctuation">]</span>
+    <span class="token keyword">INTO</span> <span class="token keyword">TABLE</span> tbl_name
+    <span class="token punctuation">[</span><span class="token keyword">PARTITION</span> <span class="token punctuation">(</span>partition_name <span class="token punctuation">[</span><span class="token punctuation">,</span> partition_name<span class="token punctuation">]</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token punctuation">[</span><span class="token keyword">CHARACTER SET</span> charset_name<span class="token punctuation">]</span>
+    <span class="token punctuation">[</span>{<span class="token keyword">FIELDS</span> <span class="token operator">|</span> <span class="token keyword">COLUMNS</span>}
+        <span class="token punctuation">[</span><span class="token keyword">TERMINATED BY</span> <span class="token string">'string'</span><span class="token punctuation">]</span>
+        <span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token keyword">OPTIONALLY</span><span class="token punctuation">]</span> <span class="token keyword">ENCLOSED BY</span> <span class="token string">'char'</span><span class="token punctuation">]</span>
+        <span class="token punctuation">[</span><span class="token keyword">ESCAPED BY</span> <span class="token string">'char'</span><span class="token punctuation">]</span>
+    <span class="token punctuation">]</span>
+    <span class="token punctuation">[</span><span class="token keyword">LINES</span>
+        <span class="token punctuation">[</span><span class="token keyword">STARTING BY</span> <span class="token string">'string'</span><span class="token punctuation">]</span>
+        <span class="token punctuation">[</span><span class="token keyword">TERMINATED BY</span> <span class="token string">'string'</span><span class="token punctuation">]</span>
+    <span class="token punctuation">]</span>
+    <span class="token punctuation">[</span><span class="token keyword">IGNORE</span> number {<span class="token keyword">LINES</span> <span class="token operator">|</span> <span class="token keyword">ROWS</span>}<span class="token punctuation">]</span>
+    <span class="token punctuation">[</span><span class="token punctuation">(</span>col_name_or_user_var
+        <span class="token punctuation">[</span><span class="token punctuation">,</span> col_name_or_user_var<span class="token punctuation">]</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token punctuation">[</span><span class="token keyword">SET</span> col_name<span class="token operator">=</span>{expr <span class="token operator">|</span> <span class="token keyword">DEFAULT</span>}<span class="token punctuation">,</span>
+        <span class="token punctuation">[</span><span class="token punctuation">,</span> col_name<span class="token operator">=</span>{expr <span class="token operator">|</span> <span class="token keyword">DEFAULT</span>}<span class="token punctuation">]</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">]</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">确实，想要把它的每一个参数或选项搞清楚是件不容易的事。不过，类似于其他工具（就像是惯例一样），重要的 “部分” 也并不多。下面，我将讲解 <code>LOAD DATA INFILE</code> 命令最常用的选项或参数的含义：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;"><strong>LOW_PRIORITY | CONCURRENT</strong>：这两个关键字控制写表过程中存在读表的行为
+<ul>
+<li style="font-size: 20px; line-height: 38px;"><strong>LOW_PRIORITY</strong>：在写入过程中，如果有客户端读表，写入将会被延后，直至没有任何客户端读表再继续写入。但是，这个选项仅适用于表锁存储引擎，例如 MyISAM、MEMORY、MERGE</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>CONCURRENT</strong>：允许在写入过程中其他客户端读取表内容</li>
+</ul>
+</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>LOCAL</strong>：标识从客户端所在主机读取文件，否则，文件必须位于 MySQL 服务器上</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>REPLACE</strong> | IGNORE：控制对现有唯一键记录重复处理的方式
+<ul>
+<li style="font-size: 20px; line-height: 38px;"><strong>REPLACE</strong>：新纪录替换重复的原唯一键记录</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>IGNORE</strong>：跳过唯一键重复的行</li>
+<li style="font-size: 20px; line-height: 38px;">如果不指定任何一个选项，遇到重复唯一键时，报错并停止数据插入</li>
+</ul>
+</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>FIELDS 子句</strong>：指定文件记录列值的分割格式，如果使用这个子句，则至少要提供以下选项中的一个
+<ul>
+<li style="font-size: 20px; line-height: 38px;"><strong>TERMINATED BY</strong>：分隔符，行记录中每个列值的分隔符</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>ENCLOSED BY</strong>：控制哪些字段应该包裹在引号里面</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>ESCAPED BY</strong>：转义字符</li>
+</ul>
+</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>LINES 子句</strong>：指定文件记录行的分割格式，默认是换行符 ‘\n’
+<ul>
+<li style="font-size: 20px; line-height: 38px;"><strong>STARTING BY</strong>：所有的行都包含相同的前缀，使用这个选项可以忽略前缀。特别地，如果某行不包含前缀，则整行都会被跳过</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>TERMINATED BY</strong>：行分隔符</li>
+</ul>
+</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>IGNORE number</strong>：忽略文件开始的 number 行，例如表头</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>col_name_or_user_var</strong>：如果想导入表的某些列，可以显示的指定列名</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">可以知道，<code>LOAD DATA INFILE</code> 数据插入方式最核心的工作是构造文本文件。我这里同样使用 Java 语言去完成这件事，代码如下：</p>
+</div><div class="cl-preview-section"><pre class="  language-java"><code class="prism  language-java"><span class="token comment">// 数据目录及文件名格式定义（目录 /tmp/load_data_file 需要存在）</span>
+<span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> String LOAD_DATA_FILE <span class="token operator">=</span> <span class="token string">"/tmp/load_data_file/%d_worker.txt"</span><span class="token punctuation">;</span>
+
+<span class="token comment">/**
+ * &lt;h2&gt;构造 LOAD DATA INFILE 所需的数据文件&lt;/h2&gt;
+ * */</span>
+<span class="token annotation punctuation">@Test</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">buildLoadDataFile</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">throws</span> IOException <span class="token punctuation">{</span>
+
+    <span class="token comment">// 定义需要写入的记录数</span>
+    List<span class="token operator">&lt;</span>Integer<span class="token operator">&gt;</span> workerCount <span class="token operator">=</span> Arrays<span class="token punctuation">.</span><span class="token function">asList</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">,</span> <span class="token number">1000</span><span class="token punctuation">,</span> <span class="token number">10000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">for</span> <span class="token punctuation">(</span>Integer integer <span class="token operator">:</span> workerCount<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+        FileWriter fw <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">FileWriter</span><span class="token punctuation">(</span>String<span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span>LOAD_DATA_FILE<span class="token punctuation">,</span> integer<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> j <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> j <span class="token operator">&lt;</span> integer<span class="token punctuation">;</span> j<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+            BufferedWriter bw <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BufferedWriter</span><span class="token punctuation">(</span>fw<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 构造随机插入的数据，列值之间以逗号分隔</span>
+            String line <span class="token operator">=</span> String<span class="token punctuation">.</span><span class="token function">format</span><span class="token punctuation">(</span><span class="token string">"%s,%s,%s,%s"</span><span class="token punctuation">,</span>
+                    TYPES<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>random<span class="token punctuation">.</span><span class="token function">nextInt</span><span class="token punctuation">(</span>TYPES<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                    NAMES<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>random<span class="token punctuation">.</span><span class="token function">nextInt</span><span class="token punctuation">(</span>NAMES<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                    SALARYS<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>random<span class="token punctuation">.</span><span class="token function">nextInt</span><span class="token punctuation">(</span>SALARYS<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                    VERSIONS<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>random<span class="token punctuation">.</span><span class="token function">nextInt</span><span class="token punctuation">(</span>VERSIONS<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            bw<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span>line<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            bw<span class="token punctuation">.</span><span class="token function">newLine</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            bw<span class="token punctuation">.</span><span class="token function">flush</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        fw<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">文本文件构造完成之后，先别着急去执行 <code>LOAD DATA INFILE</code> 命令，因为你大概率会遇到 “ERROR 1290 (HY000): The MySQL server is running with the --secure-file-priv option so it cannot execute this statement” 错误（可以去尝试执行下看看）。这其实是受到 secure_file_priv 参数的影响，它用于限制数据表导入导出。其取值和含义如下：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;"><strong>NULL</strong>：默认值，限制 MySQL 表数据不允许导入导出</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>/tmp</strong>：限制 MySQL 表数据只能在 /tmp 目录中执行导入导出，其他目录不能执行</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>空值</strong>：没有限制</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">另外，secure_file_priv 是一个只读参数，我们只能通过修改 MySQL 的配置文件，并重启 MySQL 服务来解决问题。打开 my.cnf，并加入如下配置：</p>
+</div><div class="cl-preview-section"><pre class="  language-txt"><code class="prism  language-txt">secure_file_priv = ''
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">最后，就可以通过 MySQL 客户端完成数据导入工作，如下所示：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql">mysql<span class="token operator">&gt;</span> <span class="token keyword">LOAD</span> <span class="token keyword">DATA</span> <span class="token keyword">INFILE</span> <span class="token string">'/tmp/load_data_file/100_worker.txt'</span> <span class="token keyword">INTO</span> <span class="token keyword">TABLE</span> <span class="token punctuation">`</span>imooc_mysql<span class="token punctuation">`</span><span class="token punctuation">.</span><span class="token punctuation">`</span>worker<span class="token punctuation">`</span>
+    <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token keyword">FIELDS</span> <span class="token keyword">TERMINATED BY</span> <span class="token string">','</span>
+    <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token keyword">LINES</span> <span class="token keyword">TERMINATED BY</span> <span class="token string">'\n'</span>
+    <span class="token operator">-</span><span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token keyword">type</span><span class="token punctuation">,</span> name<span class="token punctuation">,</span> salary<span class="token punctuation">,</span> version<span class="token punctuation">)</span><span class="token punctuation">;</span>
+Query OK<span class="token punctuation">,</span> <span class="token number">100</span> <span class="token keyword">rows</span> affected <span class="token punctuation">(</span><span class="token number">0.01</span> sec<span class="token punctuation">)</span>
+Records: <span class="token number">100</span>  Deleted: <span class="token number">0</span>  Skipped: <span class="token number">0</span>  <span class="token keyword">Warnings</span>: <span class="token number">0</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">同样的方式，我们也可以完成1000和10000条数据的插入工作（命令的选项之前都有说明，这里不再赘述）。</p>
+</div><div class="cl-preview-section"><h3 id="插入耗时分析-2">4.2 插入耗时分析</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">通过执行三个数据导入（插入）命令，我们可以收集客户端中打印的执行时间，总结如下表所示：</p>
+</div><div class="cl-preview-section"><div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>插入条数</th>
+<th>耗时</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100</td>
+<td>0.01s</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>0.06s</td>
+</tr>
+<tr>
+<td>10000</td>
+<td>0.28s</td>
+</tr>
+</tbody>
+</table>
+</div></div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">经过对比可以发现，<code>LOAD DATA INFILE</code> 与批量 INSERT 的耗时是差不多的。这其实也很好理解，它们的原理都是类似的：一次性将数据发给服务器，经过一次校验、写日志、写数据、更新索引的过程即可。同样，也正是由于这种方式的插入效率很高，自然也就成为企业级开发中的可选方案。</p>
+</div><div class="cl-preview-section"><h2 id="总结" style="font-size: 30px;">5. 总结</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">通过对比三种大批量数据插入的方式，我们能够确定每一种方式的优劣性，当然也就能够在需要的时候做出合适的选择。对于大数据量插入需求来说，顺序插入不仅会影响客户端的性能，同样会给服务器带来很大的压力；批量插入和 <code>LOAD DATA INFILE</code> 都具有很高的性能，使用它们其中的任何一种都是可行的，只是需要考虑工作重心的问题。最后，还要好好把握每一种数据插入方式性能损耗的地方，也就是即使很慢，也要知道慢的原因。</p>
+</div><div class="cl-preview-section"><h2 id="问题" style="font-size: 30px;">6. 问题</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">你做过大批量数据插入吗 ？是使用哪一种方式完成的呢 ？<br><br>
+对于批量 INSERT 过程，可以考虑使用多线程去完成吗 ？你觉得性能会有提升吗 ？<br><br>
+你能总结三种数据插入方式耗时的地方吗 ？<br><br>
+如果你遇到了大数据量插入的需求，你会选择使用什么方法呢 ？为什么 ？</p>
+</div><div class="cl-preview-section"><h2 id="参考资料" style="font-size: 30px;">7. 参考资料</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">《高性能 MySQL（第三版）》<br><br>
+<a href="https://dev.mysql.com/doc/refman/5.7/en/insert.html">MySQL 官方文档：INSERT Statement</a><br><br>
+<a href="https://dev.mysql.com/doc/refman/5.7/en/load-data.html">MySQL 官方文档：LOAD DATA Statement</a><br><br>
+<a href="https://dev.mysql.com/doc/refman/5.7/en/insert-optimization.html">MySQL 官方文档：Optimizing INSERT Statements</a><br><br>
+<a href="https://dev.mysql.com/doc/refman/5.7/en/concurrent-inserts.html">MySQL 官方文档：Concurrent Inserts</a><br><br>
+<a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-storage-engine.html">MySQL 官方文档：The InnoDB Storage Engine</a></p>
+</div>}
+                        </div>
+                    </div>
+                                            <!-- 买过的阅读 -->
+                        <div class="art-next-prev clearfix">
+                                                                                                <!-- 已买且开放 或者可以试读 -->
+                                    <a href="/read/71/article/1843">
+                                                                    <div class="prev l clearfix">
+                                        <div class="icon l">
+                                            <i class="imv2-arrow3_l"></i>
+                                        </div>
+                                        <p>
+                                            23 关于 SQL 查询语句，有什么好的建议吗？
+                                        </p>
+                                    </div>
+                                </a>
+                                                                                                                            <!-- 已买且开放 或者可以试读 -->
+                                    <a href="/read/71/article/1849">
+                                                                    <div class="next r clearfix">
+                                        <p>
+                                            25 加速 order by 查询，可以从哪些方面做优化呢？
+                                        </p>
+                                        <div class="icon r">
+                                            <i class="imv2-arrow3_r"></i>
+                                        </div>
+
+                                    </div>
+                                </a>
+                                                    </div>
+                                    </div>
+                <div class="comments-con js-comments-con" id="coments_con">
+                </div>
+
+                
+            </div>
+            
+            
+            
+
+        </div>
+    </div>
+</div>
+
+<div class="modal modal-jiaQun-new hide" id="modal-jiaQun">
+    <div class="inner" style="">
+        <div class="modal-close js-close-jiaQun">
+            <i class="imv2-close"></i>
+        </div>
+        <div class="content">
+            <img src="https://img2.sycdn.imooc.com/5eba10270001392b05330597.jpg">
+            <div class="right-info">
+                <div class="title">
+                    扫码加入慕课前沿技术核心用户群
+                </div>
+                <div class="desc">
+                                            <p class="mb6">验证信息：<span id="joincode">2010291942557129</span><span class="copy js-copy-joincode">复制</span></p>
+                                        <p class="mb6">QQ讨论群号：729941811</p>
+                                            <p>QQ群URL：<a href="https://jq.qq.com/?_wv=1027&amp;k=5WJLMxV" target="_blank">点击访问</a></p>
+                                    </div>
+            </div>
+            <p class="tip">若遇到搜索不到QQ群或加群失败，请联系客服邮箱:kf@imooc.com</p>
+        </div>
+    </div>
+</div>
+ 
+<!-- 专栏介绍页专栏评价 -->
+
+<!-- 专栏介绍页底部三条评价 -->
+
+<!-- 专栏阅读页弹层目录和介绍页页面目录 -->
+
+<!-- 专栏阅读页发布回复 -->
+
+<!-- 专栏阅读页发布评论 -->
+
+<!-- 专栏阅读页底部评论 -->
+
+<!-- 专栏阅读 单个 评论 -->
+
+<!-- 新增回复和展开三条以外回复 -->
+
+<!-- 立即订阅的弹窗 -->
+
+
+
+
+
+
+
+
+
+
+
+
+</div></body></html>

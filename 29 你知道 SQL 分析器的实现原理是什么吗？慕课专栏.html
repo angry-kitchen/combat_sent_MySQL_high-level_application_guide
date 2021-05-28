@@ -1,0 +1,385 @@
+<html><head><meta charset="utf-8"><title>29 你知道 SQL 分析器的实现原理是什么吗？-慕课专栏</title>
+			<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+			<meta name="renderer" content="webkit">
+			<meta property="qc:admins" content="77103107776157736375">
+			<meta property="wb:webmaster" content="c4f857219bfae3cb">
+			<meta http-equiv="Access-Control-Allow-Origin" content="*">
+			<meta http-equiv="Cache-Control" content="no-transform ">
+			<meta http-equiv="Cache-Control" content="no-siteapp">
+			<link rel="apple-touch-icon" sizes="76x76" href="https://www.imooc.com/static/img/common/touch-icon-ipad.png">
+			<link rel="apple-touch-icon" sizes="120x120" href="https://www.imooc.com/static/img/common/touch-icon-iphone-retina.png">
+			<link rel="apple-touch-icon" sizes="152x152" href="https://www.imooc.com/static/img/common/touch-icon-ipad-retina.png">
+			<link href="https://moco.imooc.com/captcha/style/captcha.min.css" rel="stylesheet">
+			<link rel="stylesheet" href="https://www.imooc.com/static/moco/v1.0/dist/css/moco.min.css?t=201907021539" type="text/css">
+			<link rel="stylesheet" href="https://www.imooc.com/static/lib/swiper/swiper-3.4.2.min.css?t=201907021539">
+			<link rel="stylesheet" href="https://static.mukewang.com/static/css/??base.css,common/common-less.css?t=2.5,column/zhuanlanChapter-less.css?t=2.5,course/inc/course_tipoff-less.css?t=2.5?v=201907051055" type="text/css">
+			<link charset="utf-8" rel="stylesheet" href="https://www.imooc.com/static/lib/ueditor/themes/imooc/css/ueditor.css?v=201907021539"><link rel="stylesheet" href="https://www.imooc.com/static/lib/baiduShare/api/css/share_style0_16.css?v=6aba13f0.css"></head>
+			<body><div id="main">
+
+
+<div class="main-con hide-menu">
+    <!-- 左侧菜单 & 索引 -->
+    
+    <div class="right-content" style="padding-left: 0px;">
+        <div class="container clearfix" id="top" style="width: 1134px; display: block;">
+            
+            
+            <div class="center_con js-center_con l" style="width: 1134px;">
+                <div class="article-con">
+                                            <!-- 买过的阅读 -->
+                        
+
+                    
+                    <div class="art-title" style="margin-top: 0px;">
+                        29 你知道 SQL 分析器的实现原理是什么吗？
+                    </div>
+                    <div class="art-info clearfix">
+                        
+                        <span class="l">
+                            更新时间：2020-05-13 18:26:29
+                        </span>
+                    </div>
+                    <div class="art-top">
+                                                <img src="https://img1.sycdn.imooc.com/5eba86730001cd0722501500.jpg" alt="">
+                                                                        <div class="famous-word-box">
+                            <img src="https://www.imooc.com/static/img/column/bg-l.png" alt="" class="bg1 bg">
+                            <img src="https://www.imooc.com/static/img/column/bg-r.png" alt="" class="bg2 bg">
+                            <div class="famous-word">成功＝艰苦的劳动＋正确的方法＋少谈空话。——爱因斯坦<p></p></div>
+                        </div>
+                                            </div>
+                    <div class="art-content js-lookimg">
+                        <div id="article_content">
+                            <div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">从对 “MySQL 系统架构” 的介绍中，我们可以知道，分析器是 MySQL 逻辑架构中的一个重要组件。分析器对于我们的查询语句来说，实现了两大功能：词法分析和语法分析。所以，“研究” 分析器其实也就是研究这两大功能点。</p>
+</div><div class="cl-preview-section"><h2 id="初识分析器" style="font-size: 30px;">1. 初识分析器</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">分析器是逻辑架构中比较 “靠前” 的组件，用于搞清楚用户的需求（SQL 语句的目的），所以它在整个 MySQL 系统中发挥着至关重要的作用。在讲解它的两大核心功能之前，我们先来简单看下它的工作过程，以及关键字的定义。</p>
+</div><div class="cl-preview-section"><h3 id="关键字和非关键字">1.1 关键字和非关键字</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">其实，对于关键字的概念，我们已经多次见到过了。它是 MySQL 服务器内置的一些 “单词”，也是 SQL 语法的重要组成部分。我们可以在 MySQL 源码（<a href="https://github.com/mysql/mysql-server/blob/5.7/sql/lex.h">sql/lex.h</a>）中找到所有关键词的定义：</p>
+</div><div class="cl-preview-section"><pre class="  language-cpp"><code class="prism  language-cpp"><span class="token keyword">static</span> <span class="token keyword">const</span> SYMBOL symbols<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+  <span class="token comment">/*
+   Insert new SQL keywords after that commentary (by alphabetical order):
+  */</span>
+  <span class="token punctuation">{</span> <span class="token function">SYM</span><span class="token punctuation">(</span><span class="token string">"&amp;&amp;"</span><span class="token punctuation">,</span>                       AND_AND_SYM<span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">{</span> <span class="token function">SYM</span><span class="token punctuation">(</span><span class="token string">"&lt;"</span><span class="token punctuation">,</span>                        LT<span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">{</span> <span class="token function">SYM</span><span class="token punctuation">(</span><span class="token string">"&lt;="</span><span class="token punctuation">,</span>                       LE<span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">{</span> <span class="token function">SYM</span><span class="token punctuation">(</span><span class="token string">"&lt;&gt;"</span><span class="token punctuation">,</span>                       NE<span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">{</span> <span class="token function">SYM</span><span class="token punctuation">(</span><span class="token string">"!="</span><span class="token punctuation">,</span>                       NE<span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">MySQL 规定用户对库、表、字段等等的命名不能与关键字冲突，而这些自定义的命名就会被称作是非关键字。最后，需要知道，关键字与非关键字是分析器做词法分析的重要依据。</p>
+</div><div class="cl-preview-section"><h3 id="分析器的工作过程">1.2 分析器的工作过程</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">当 MySQL 中的 “查询缓存” 没有命中时，查询语句便会进入到分析器中（注意这里组件的工作顺序）。分析器将会对我们的 SQL 语句执行两步操作：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;"><strong>词法分析</strong>：SQL 语句其实就是按照 “一定的规则” 编写的字符串，这一步的主要工作就是标记出 “字符串” 中的关键字和非关键字</li>
+<li style="font-size: 20px; line-height: 38px;"><strong>语法分析</strong>：这一步中涵盖了两个重要的工作，第一是对 SQL 语句的语法校验；第二是生成语法树，这也是整个分析器执行过程中最复杂的工作了</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">SQL 语句解析属于编译器的范畴，它和我们平时使用的编程语言解析并没有本质的区别。同时，正是因为它在逻辑架构中所处的位置，也被称作是 MySQL 服务器的前端。</p>
+</div><div class="cl-preview-section"><h2 id="词法分析" style="font-size: 30px;">2. 词法分析</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">对于 Linux 来说，词法分析一般是通过 Flex 与 Bison 完成的。而对于 MySQL 来说，考虑到效率和灵活性，自己实现了词法分析的部分。下面，我们先去搞清楚词法分析的含义（即它的执行过程），再去简单的看一看它的源码实现。</p>
+</div><div class="cl-preview-section"><h3 id="词法分析执行过程">2.1 词法分析执行过程</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">词法分析对应的英文是 lexical analysis，通常会被简写为 “lex”。词法分析的核心工作就是把输入转化为一个个有意义的词块，称之为 Token。之后，会再把 Token 划分为关键字和非关键字两类。举个例子，假设我们向词法分析组件传递如下的 SQL 语句：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token keyword">SELECT</span> <span class="token keyword">type</span><span class="token punctuation">,</span> name <span class="token keyword">FROM</span> worker<span class="token punctuation">;</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">在经过词法分析组件之后，这条 SQL 语句会被 “分割” 为5个 Token，其中有两个关键字，三个非关键字。如下表所示：</p>
+</div><div class="cl-preview-section"><div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>关键字</th>
+<th>非关键字</th>
+<th>非关键字</th>
+<th>关键字</th>
+<th>非关键字</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SELECT</td>
+<td>type</td>
+<td>name</td>
+<td>FROM</td>
+<td>worker</td>
+</tr>
+</tbody>
+</table>
+</div></div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">分词的本质是正则表达式的匹配过程（构词规则的识别过程），它所表达的语义是：字符串（SQL 语句）中的单词是什么，代表什么含义。好的，正如你所见，相对来说，词法分析的工作量是比较少的。</p>
+</div><div class="cl-preview-section"><h3 id="词法分析源码解读">2.2 词法分析源码解读</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">词法分析的核心源码位于 <a href="https://github.com/mysql/mysql-server/blob/5.7/sql/sql_lex.cc">sql/sql_lex.cc</a> 中（注意，需要区分代码的版本），词法分析的主要入口函数是 MYSQLlex。下面，贴出这个函数的部分核心代码：</p>
+</div><div class="cl-preview-section"><pre class="  language-cpp"><code class="prism  language-cpp"><span class="token keyword">int</span> <span class="token function">MYSQLlex</span><span class="token punctuation">(</span>YYSTYPE <span class="token operator">*</span>yylval<span class="token punctuation">,</span> YYLTYPE <span class="token operator">*</span>yylloc<span class="token punctuation">,</span> THD <span class="token operator">*</span>thd<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+  <span class="token comment">// lip 中保存了所有读取的词法信息</span>
+  Lex_input_stream <span class="token operator">*</span>lip<span class="token operator">=</span> <span class="token operator">&amp;</span> thd<span class="token operator">-</span><span class="token operator">&gt;</span>m_parser_state<span class="token operator">-</span><span class="token operator">&gt;</span>m_lip<span class="token punctuation">;</span>
+  <span class="token keyword">int</span> token<span class="token punctuation">;</span>
+  <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+
+  <span class="token comment">// 通过 lex_one_token 函数得到分析结果，即 Token</span>
+  token<span class="token operator">=</span> <span class="token function">lex_one_token</span><span class="token punctuation">(</span>yylval<span class="token punctuation">,</span> thd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  yylloc<span class="token operator">-</span><span class="token operator">&gt;</span>cpp<span class="token punctuation">.</span>start<span class="token operator">=</span> lip<span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">get_cpp_tok_start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  yylloc<span class="token operator">-</span><span class="token operator">&gt;</span>raw<span class="token punctuation">.</span>start<span class="token operator">=</span> lip<span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">get_tok_start</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token comment">// 对 Token 进行判断分类</span>
+  <span class="token keyword">switch</span><span class="token punctuation">(</span>token<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">case</span> WITH<span class="token operator">:</span>
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+    token<span class="token operator">=</span> <span class="token function">lex_one_token</span><span class="token punctuation">(</span>yylval<span class="token punctuation">,</span> thd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+  <span class="token keyword">return</span> token<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">从 MYSQLlex 的代码可以看出，它是通过 lex_one_token 函数得到了分析结果，并将这个结果赋值给变量 token。lex_one_token 代码同样位于 sql/sql_lex.cc 中，我们来看一看它的执行过程：</p>
+</div><div class="cl-preview-section"><pre class="  language-cpp"><code class="prism  language-cpp"><span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">lex_one_token</span><span class="token punctuation">(</span>YYSTYPE <span class="token operator">*</span>yylval<span class="token punctuation">,</span> THD <span class="token operator">*</span>thd<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+  uchar c<span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+  <span class="token keyword">bool</span> comment_closed<span class="token punctuation">;</span>
+  <span class="token keyword">int</span> tokval<span class="token punctuation">,</span> result_state<span class="token punctuation">;</span>
+  uint length<span class="token punctuation">;</span>
+  <span class="token keyword">enum</span> my_lex_states state<span class="token punctuation">;</span>
+  Lex_input_stream <span class="token operator">*</span>lip<span class="token operator">=</span> <span class="token operator">&amp;</span> thd<span class="token operator">-</span><span class="token operator">&gt;</span>m_parser_state<span class="token operator">-</span><span class="token operator">&gt;</span>m_lip<span class="token punctuation">;</span>
+  <span class="token keyword">const</span> CHARSET_INFO <span class="token operator">*</span>cs<span class="token operator">=</span> thd<span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">charset</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment">// 保存了词法分析状态机中的各种状态</span>
+  <span class="token keyword">const</span> my_lex_states <span class="token operator">*</span>state_map<span class="token operator">=</span> cs<span class="token operator">-</span><span class="token operator">&gt;</span>state_maps<span class="token operator">-</span><span class="token operator">&gt;</span>main_map<span class="token punctuation">;</span>
+  <span class="token keyword">const</span> uchar <span class="token operator">*</span>ident_map<span class="token operator">=</span> cs<span class="token operator">-</span><span class="token operator">&gt;</span>ident_map<span class="token punctuation">;</span>
+
+  lip<span class="token operator">-</span><span class="token operator">&gt;</span>yylval<span class="token operator">=</span>yylval<span class="token punctuation">;</span>			<span class="token comment">// The global state</span>
+
+  lip<span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">start_token</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  state<span class="token operator">=</span>lip<span class="token operator">-</span><span class="token operator">&gt;</span>next_state<span class="token punctuation">;</span>
+  lip<span class="token operator">-</span><span class="token operator">&gt;</span>next_state<span class="token operator">=</span>MY_LEX_OPERATOR_OR_IDENT<span class="token punctuation">;</span>
+
+  <span class="token comment">// 循环体中根据每次 state 变量的取值来决定经过哪一个分支，另外 lip 中也会保存下一个状态的信息</span>
+  <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token punctuation">;</span><span class="token punctuation">;</span><span class="token punctuation">)</span>
+  <span class="token punctuation">{</span>
+    <span class="token keyword">switch</span> <span class="token punctuation">(</span>state<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">case</span> MY_LEX_OPERATOR_OR_IDENT<span class="token operator">:</span>	<span class="token comment">// Next is operator or keyword</span>
+    <span class="token comment">// 初始 state 状态</span>
+    <span class="token keyword">case</span> MY_LEX_START<span class="token operator">:</span>			<span class="token comment">// Start of token</span>
+      <span class="token comment">// Skip starting whitespace</span>
+      <span class="token keyword">while</span><span class="token punctuation">(</span>state_map<span class="token punctuation">[</span>c<span class="token operator">=</span> lip<span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">yyPeek</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">==</span> MY_LEX_SKIP<span class="token punctuation">)</span>
+      <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">state_map 在初始化时首先将所有的 ASCII 表中的字符所属状态填满，接着会对当前词法分析的状态进行判定来决定返回什么类型的 Token。这个判定的主要工作对应到 for 循环，循环体中会根据每次 state 变量的取值来决定经过哪一个分支，另外 lip 中也会保存下一个状态的信息。</p>
+</div><div class="cl-preview-section"><h2 id="语法分析" style="font-size: 30px;">3. 语法分析</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">根据词法分析的结果，语法分析器会根据语法规则，判断输入的 SQL 语句是否满足 MySQL 规定的语法，之后生成一棵语法树。所以，语法分析是词法分析的下游。</p>
+</div><div class="cl-preview-section"><h3 id="生成语法树">3.1 生成语法树</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">语法分析对应的英文是 syntax analysis，简单的说，它就是确定词法分析中的 Token 是如何彼此关联的。MySQL 中的语法分析使用的是 Bison，Bison 会根据 MySQL 定义的语法规则进行语法解析。而语法解析实际上就是生成语法树的过程，这个过程也是最复杂、最精彩的部分。下面，我们先来看一条示例 SQL 语句：</p>
+</div><div class="cl-preview-section"><pre class="  language-sql"><code class="prism  language-sql"><span class="token keyword">SELECT</span> <span class="token keyword">type</span><span class="token punctuation">,</span> name <span class="token keyword">FROM</span> worker <span class="token keyword">WHERE</span> salary <span class="token operator">&gt;</span> <span class="token number">2000</span> <span class="token operator">AND</span> <span class="token keyword">type</span> <span class="token operator">=</span> <span class="token string">'A'</span><span class="token punctuation">;</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">如果把它作为语法分析的输入（实际上是词法分析的输出），可以得到如下图所示的语法树：</p>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;"><img class="" src="https://img1.sycdn.imooc.com/5eba86f40001ea7606900374.jpg" data-original="//img1.sycdn.imooc.com/5eba86f40001ea7606900374.jpg" alt="图片描述"></p>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">可以看出，语法树中的各个 “树节点” 其实就是 SQL 语句中的各个 Token，而不同的颜色则标记了不同的 Token 类型。顺利生成语法树之后，SQL 分析器的工作也就基本完成了。</p>
+</div><div class="cl-preview-section"><h3 id="语法树生成源码解读">3.2 语法树生成源码解读</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">生成语法树相关的知识点其实属于编译器的范畴，这对于大多数人而言，是比较陌生的。使用 Bison 来构建语法树几乎成了 “业界标准”，但是也正是由于它的功能单一，只适用于一些特定的问题。所以，相对来说，在工程领域，它的知名度并不高。</p>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">MySQL 语法分析的源码位于 <a href="https://github.com/mysql/mysql-server/blob/5.7/sql/sql_yacc.yy">sql/sql_yacc.yy</a> 中，下面，我们先来看一看核心的解析过程：</p>
+</div><div class="cl-preview-section"><pre class="  language-cpp"><code class="prism  language-cpp"><span class="token comment">// SELECT 语句的解析入口</span>
+select<span class="token operator">:</span>
+          select_init
+          <span class="token punctuation">{</span>
+            $$<span class="token operator">=</span> NEW_PTN <span class="token function">PT_select</span><span class="token punctuation">(</span>$<span class="token number">1</span><span class="token punctuation">,</span> SQLCOM_SELECT<span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+        <span class="token punctuation">;</span>
+
+<span class="token comment">// 首先找到 SELECT 关键字</span>
+select_init<span class="token operator">:</span>
+          SELECT_SYM select_part2 opt_union_clause
+          <span class="token punctuation">{</span>
+            $$<span class="token operator">=</span> NEW_PTN <span class="token function">PT_select_init2</span><span class="token punctuation">(</span>$<span class="token number">1</span><span class="token punctuation">,</span> $<span class="token number">2</span><span class="token punctuation">,</span> $<span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+        <span class="token operator">|</span> <span class="token string">'('</span> select_paren <span class="token string">')'</span> union_opt
+          <span class="token punctuation">{</span>
+            $$<span class="token operator">=</span> NEW_PTN <span class="token function">PT_select_init_parenthesis</span><span class="token punctuation">(</span>$<span class="token number">2</span><span class="token punctuation">,</span> $<span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+        <span class="token punctuation">;</span>
+<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+
+select_part2<span class="token operator">:</span>
+          <span class="token comment">// 解析 SELECT 的列名</span>
+          select_options_and_item_list
+          <span class="token comment">// 解析 ORDER BY 子句</span>
+          opt_order_clause
+          <span class="token comment">// 解析 LIMIT 子句</span>
+          opt_limit_clause
+          <span class="token comment">// 解析 SELECT 语句中的锁</span>
+          opt_select_lock_type
+          <span class="token punctuation">{</span>
+            $$<span class="token operator">=</span> NEW_PTN <span class="token function">PT_select_part2</span><span class="token punctuation">(</span>$<span class="token number">1</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span>
+                                        $<span class="token number">2</span><span class="token punctuation">,</span> $<span class="token number">3</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span> $<span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+        <span class="token operator">|</span> select_options_and_item_list into opt_select_lock_type
+          <span class="token punctuation">{</span>
+            $$<span class="token operator">=</span> NEW_PTN <span class="token function">PT_select_part2</span><span class="token punctuation">(</span>$<span class="token number">1</span><span class="token punctuation">,</span> $<span class="token number">2</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span>
+                                        <span class="token constant">NULL</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span> <span class="token constant">NULL</span><span class="token punctuation">,</span> $<span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+        <span class="token comment">// 解析 “各种” 子句</span>
+        <span class="token operator">|</span> select_options_and_item_list  <span class="token comment">/* #1 */</span>
+          opt_into                      <span class="token comment">/* #2 */</span>
+          from_clause                   <span class="token comment">/* #3 */</span>
+          opt_where_clause              <span class="token comment">/* #4 */</span>
+          opt_group_clause              <span class="token comment">/* #5 */</span>
+          opt_having_clause             <span class="token comment">/* #6 */</span>
+          opt_order_clause              <span class="token comment">/* #7 */</span>
+          opt_limit_clause              <span class="token comment">/* #8 */</span>
+          opt_procedure_analyse_clause  <span class="token comment">/* #9 */</span>
+          opt_into                      <span class="token comment">/* #10 */</span>
+          opt_select_lock_type          <span class="token comment">/* #11 */</span>
+          <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+        <span class="token punctuation">;</span>
+<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+
+<span class="token comment">// FROM 子句，解析表名</span>
+from_clause<span class="token operator">:</span>
+          FROM table_reference_list <span class="token punctuation">{</span> $$<span class="token operator">=</span> $<span class="token number">2</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token punctuation">;</span>
+opt_from_clause<span class="token operator">:</span>
+          <span class="token comment">/* empty */</span> <span class="token punctuation">{</span> $$<span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token operator">|</span> from_clause
+        <span class="token punctuation">;</span>
+
+<span class="token comment">// 解析表的联合查询</span>
+table_reference_list<span class="token operator">:</span>
+          join_table_list
+          <span class="token punctuation">{</span>
+            $$<span class="token operator">=</span> NEW_PTN <span class="token function">PT_table_reference_list</span><span class="token punctuation">(</span>$<span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+        <span class="token operator">|</span> DUAL_SYM <span class="token punctuation">{</span> $$<span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+          <span class="token comment">/* oracle compatibility: oracle always requires FROM clause,
+             and DUAL is system table without fields.
+             Is "SELECT 1 FROM DUAL" any better than "SELECT 1" ?
+          Hmmm :) */</span>
+        <span class="token punctuation">;</span>
+
+<span class="token comment">// 解析 WHERE 子句（条件表达式）</span>
+opt_where_clause<span class="token operator">:</span>
+          <span class="token comment">/* empty */</span>  <span class="token punctuation">{</span> $$<span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+        <span class="token operator">|</span> WHERE expr
+          <span class="token punctuation">{</span>
+            $$<span class="token operator">=</span> <span class="token keyword">new</span> PTI_context<span class="token operator">&lt;</span>CTX_WHERE<span class="token operator">&gt;</span><span class="token punctuation">(</span>@$<span class="token punctuation">,</span> $<span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+        <span class="token punctuation">;</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">通过 Bison 完成语法解析之后，会将解析结果生成的数据结构保存在 struct LEX 中。LEX 结构体定义在 <a href="https://github.com/mysql/mysql-server/blob/5.7/sql/sql_lex.h">sql/sql_lex.h</a> 中，源码如下所示：</p>
+</div><div class="cl-preview-section"><pre class="  language-cpp"><code class="prism  language-cpp"><span class="token keyword">struct</span> LEX<span class="token operator">:</span> <span class="token keyword">public</span> Query_tables_list
+<span class="token punctuation">{</span>
+  <span class="token keyword">friend</span> <span class="token keyword">bool</span> <span class="token function">lex_start</span><span class="token punctuation">(</span>THD <span class="token operator">*</span>thd<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  SELECT_LEX_UNIT <span class="token operator">*</span>unit<span class="token punctuation">;</span>                 <span class="token comment">///&lt; Outer-most query expression</span>
+  <span class="token comment">/// @todo: select_lex can be replaced with unit-&gt;first-select()</span>
+  SELECT_LEX <span class="token operator">*</span>select_lex<span class="token punctuation">;</span>                <span class="token comment">///&lt; First query block</span>
+  SELECT_LEX <span class="token operator">*</span>all_selects_list<span class="token punctuation">;</span>          <span class="token comment">///&lt; List of all query blocks</span>
+<span class="token keyword">private</span><span class="token operator">:</span>
+  <span class="token comment">/* current SELECT_LEX in parsing */</span>
+  SELECT_LEX <span class="token operator">*</span>m_current_select<span class="token punctuation">;</span>
+  <span class="token comment">// 存储 SELECT 关键字之后的列名</span>
+  List<span class="token operator">&lt;</span>Item<span class="token operator">&gt;</span> item_list<span class="token punctuation">;</span>
+  <span class="token comment">// 存储查询的数据表名称</span>
+  SQL_I_List<span class="token operator">&lt;</span>TABLE_LIST<span class="token operator">&gt;</span>  table_list<span class="token punctuation">;</span>
+  <span class="token comment">// 存储查询条件</span>
+  Item <span class="token operator">*</span>where<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">词法分析从 SQL 语句中得到了 Token，并对 Token 进行了分类；语法分析则把这些分类的 Token 按照一定的规则组织成了语法树，并最终保存到 LEX 数据结构中。之后，LEX 会继续向下传递到优化器，优化器再去根据这里的数据，生成执行计划。</p>
+</div><div class="cl-preview-section"><h2 id="总结" style="font-size: 30px;">4. 总结</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">SQL 分析器的实现（词法分析和语法分析）是极为复杂的，但幸运的是：大多数时候，你只需要知道这里面都做了些什么 ？能够分析出 SQL 语句中的每一个 Token，以及对它们进行正确的分类。当然，如果能够正确的将这些 Token 组织（画）成一棵语法树，就再好不过了。最后，我不建议你去直接读 MySQL 的实现源码，那确实是一件非常难的事，且并不一定能够指导你的工程应用。</p>
+</div><div class="cl-preview-section"><h2 id="问题" style="font-size: 30px;">5. 问题</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">给你一条 SQL 查询语句，你能总结出分析器的工作过程吗 ？<br><br>
+以你工作中遇到的 SQL 查询语句为例，尝试对它进行 Token 的拆分，并组织成语法树 ？</p>
+</div><div class="cl-preview-section"><h2 id="参考资料" style="font-size: 30px;">6. 参考资料</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">《高性能 MySQL（第三版）》<br><br>
+<a href="https://en.wikipedia.org/wiki/LR_parser">LR parser</a><br><br>
+<a href="https://en.wikipedia.org/wiki/Flex_(lexical_analyser_generator)">Flex (lexical analyser generator)</a><br><br>
+<a href="https://www.red-gate.com/simple-talk/sql/oracle/understanding-sql-query-parsing-part-1/">Understanding SQL Query Parsing</a><br><br>
+<a href="https://sqldep.com/sql-parser/">SQL Parser</a></p>
+</div>}
+                        </div>
+                    </div>
+                                            <!-- 买过的阅读 -->
+                        <div class="art-next-prev clearfix">
+                                                                                                <!-- 已买且开放 或者可以试读 -->
+                                    <a href="/read/71/article/1943">
+                                                                    <div class="prev l clearfix">
+                                        <div class="icon l">
+                                            <i class="imv2-arrow3_l"></i>
+                                        </div>
+                                        <p>
+                                            28 带你认识MySQL的系统架构
+                                        </p>
+                                    </div>
+                                </a>
+                                                                                                                            <!-- 已买且开放 或者可以试读 -->
+                                    <a href="/read/71/article/1951">
+                                                                    <div class="next r clearfix">
+                                        <p>
+                                            30 SQL 查询优化器的实现原理又是什么样的呢？
+                                        </p>
+                                        <div class="icon r">
+                                            <i class="imv2-arrow3_r"></i>
+                                        </div>
+
+                                    </div>
+                                </a>
+                                                    </div>
+                                    </div>
+                <div class="comments-con js-comments-con" id="coments_con">
+                </div>
+
+                
+            </div>
+            
+            
+            
+
+        </div>
+    </div>
+</div>
+
+<div class="modal modal-jiaQun-new hide" id="modal-jiaQun">
+    <div class="inner" style="">
+        <div class="modal-close js-close-jiaQun">
+            <i class="imv2-close"></i>
+        </div>
+        <div class="content">
+            <img src="https://img1.sycdn.imooc.com/5eba10270001392b05330597.jpg">
+            <div class="right-info">
+                <div class="title">
+                    扫码加入慕课前沿技术核心用户群
+                </div>
+                <div class="desc">
+                                            <p class="mb6">验证信息：<span id="joincode">2010291942557129</span><span class="copy js-copy-joincode">复制</span></p>
+                                        <p class="mb6">QQ讨论群号：729941811</p>
+                                            <p>QQ群URL：<a href="https://jq.qq.com/?_wv=1027&amp;k=5WJLMxV" target="_blank">点击访问</a></p>
+                                    </div>
+            </div>
+            <p class="tip">若遇到搜索不到QQ群或加群失败，请联系客服邮箱:kf@imooc.com</p>
+        </div>
+    </div>
+</div>
+ 
+<!-- 专栏介绍页专栏评价 -->
+
+<!-- 专栏介绍页底部三条评价 -->
+
+<!-- 专栏阅读页弹层目录和介绍页页面目录 -->
+
+<!-- 专栏阅读页发布回复 -->
+
+<!-- 专栏阅读页发布评论 -->
+
+<!-- 专栏阅读页底部评论 -->
+
+<!-- 专栏阅读 单个 评论 -->
+
+<!-- 新增回复和展开三条以外回复 -->
+
+<!-- 立即订阅的弹窗 -->
+
+
+
+
+
+
+
+
+
+
+
+
+</div></body></html>

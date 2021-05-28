@@ -1,0 +1,416 @@
+<html><head><meta charset="utf-8"><title>11 面试常见的高级查询 - 连接、联合、子查询-慕课专栏</title>
+			<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+			<meta name="renderer" content="webkit">
+			<meta property="qc:admins" content="77103107776157736375">
+			<meta property="wb:webmaster" content="c4f857219bfae3cb">
+			<meta http-equiv="Access-Control-Allow-Origin" content="*">
+			<meta http-equiv="Cache-Control" content="no-transform ">
+			<meta http-equiv="Cache-Control" content="no-siteapp">
+			<link rel="apple-touch-icon" sizes="76x76" href="https://www.imooc.com/static/img/common/touch-icon-ipad.png">
+			<link rel="apple-touch-icon" sizes="120x120" href="https://www.imooc.com/static/img/common/touch-icon-iphone-retina.png">
+			<link rel="apple-touch-icon" sizes="152x152" href="https://www.imooc.com/static/img/common/touch-icon-ipad-retina.png">
+			<link href="https://moco.imooc.com/captcha/style/captcha.min.css" rel="stylesheet">
+			<link rel="stylesheet" href="https://www.imooc.com/static/moco/v1.0/dist/css/moco.min.css?t=201907021539" type="text/css">
+			<link rel="stylesheet" href="https://www.imooc.com/static/lib/swiper/swiper-3.4.2.min.css?t=201907021539">
+			<link rel="stylesheet" href="https://static.mukewang.com/static/css/??base.css,common/common-less.css?t=2.5,column/zhuanlanChapter-less.css?t=2.5,course/inc/course_tipoff-less.css?t=2.5?v=201907051055" type="text/css">
+			<link charset="utf-8" rel="stylesheet" href="https://www.imooc.com/static/lib/ueditor/themes/imooc/css/ueditor.css?v=201907021539"><link rel="stylesheet" href="https://www.imooc.com/static/lib/baiduShare/api/css/share_style0_16.css?v=6aba13f0.css"></head>
+			<body><div id="main">
+
+
+<div class="main-con hide-menu">
+    <!-- 左侧菜单 & 索引 -->
+    
+    <div class="right-content" style="padding-left: 0px;">
+        <div class="container clearfix" id="top" style="width: 1134px; display: block;">
+            
+            
+            <div class="center_con js-center_con l" style="width: 1134px;">
+                <div class="article-con">
+                                            <!-- 买过的阅读 -->
+                        
+
+                    
+                    <div class="art-title" style="margin-top: 0px;">
+                        11 面试常见的高级查询 - 连接、联合、子查询
+                    </div>
+                    <div class="art-info clearfix">
+                        
+                        <span class="l">
+                            更新时间：2020-03-25 10:06:34
+                        </span>
+                    </div>
+                    <div class="art-top">
+                                                <img src="https://img2.sycdn.imooc.com/5e7abc850001e57006400391.jpg" alt="">
+                                                                        <div class="famous-word-box">
+                            <img src="https://www.imooc.com/static/img/column/bg-l.png" alt="" class="bg1 bg">
+                            <img src="https://www.imooc.com/static/img/column/bg-r.png" alt="" class="bg2 bg">
+                            <div class="famous-word">完成工作的方法，是爱惜每一分钟。——达尔文<p></p></div>
+                        </div>
+                                            </div>
+                    <div class="art-content js-lookimg">
+                        <div id="article_content">
+                            <div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">MySQL 的面试里，索引、事务和复杂查询几乎是离不开的话题，而这里的复杂查询指的就是连接、联合和子查询。复杂查询并不常用（相对于单表形式的简单查询而言），所以，很多 ORM 框架对它的实现也并不优雅，也就自然而然的成为了工作、面试中的难题。这一节里，我将对复杂查询进行详细解读，相较于之前的内容，可能会让你觉得 “与众不同”，因为这一节几乎都是实战性质的应用。</p>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">在真正的去讲解这些高级（复杂）查询之前，我们需要先去做一些准备工作，想必你应该也猜到了：建表和 fake 一些数据（fake 与 mock 是相同的意思，只是我的个人习惯，忽略即可）。执行如下 SQL 语句：</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token comment">-- 创建 imooc_user 表</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token punctuation">`</span>imooc_user<span class="token punctuation">`</span> <span class="token punctuation">(</span>
+  <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">AUTO_INCREMENT</span> <span class="token keyword">COMMENT</span> <span class="token string">'用户 id'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>name<span class="token punctuation">`</span> char<span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token string">''</span> <span class="token keyword">COMMENT</span> <span class="token string">'姓名'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>age<span class="token punctuation">`</span> <span class="token keyword">int</span><span class="token punctuation">(</span><span class="token number">11</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token string">'0'</span> <span class="token keyword">COMMENT</span> <span class="token string">'年龄'</span><span class="token punctuation">,</span>
+  <span class="token keyword">PRIMARY</span> <span class="token keyword">KEY</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">)</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span><span class="token operator">=</span><span class="token keyword">InnoDB</span> <span class="token keyword">DEFAULT</span> <span class="token keyword">CHARSET</span><span class="token operator">=</span>utf8 <span class="token keyword">COMMENT</span><span class="token operator">=</span><span class="token string">'慕课网用户信息表'</span><span class="token punctuation">;</span>
+
+<span class="token comment">-- 创建 imooc_course 表</span>
+<span class="token keyword">CREATE</span> <span class="token keyword">TABLE</span> <span class="token punctuation">`</span>imooc_course<span class="token punctuation">`</span> <span class="token punctuation">(</span>
+  <span class="token punctuation">`</span>id<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">AUTO_INCREMENT</span> <span class="token keyword">COMMENT</span> <span class="token string">'id'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span> <span class="token keyword">bigint</span><span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">COMMENT</span> <span class="token string">'用户 id'</span><span class="token punctuation">,</span>
+  <span class="token punctuation">`</span>cname<span class="token punctuation">`</span> char<span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">)</span> <span class="token operator">NOT</span> <span class="token boolean">NULL</span> <span class="token keyword">DEFAULT</span> <span class="token string">''</span> <span class="token keyword">COMMENT</span> <span class="token string">'课程名'</span><span class="token punctuation">,</span>
+  <span class="token keyword">PRIMARY</span> <span class="token keyword">KEY</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>id<span class="token punctuation">`</span><span class="token punctuation">)</span>
+<span class="token punctuation">)</span> <span class="token keyword">ENGINE</span><span class="token operator">=</span><span class="token keyword">InnoDB</span> <span class="token keyword">DEFAULT</span> <span class="token keyword">CHARSET</span><span class="token operator">=</span>utf8 <span class="token keyword">COMMENT</span><span class="token operator">=</span><span class="token string">'慕课网课程信息表'</span><span class="token punctuation">;</span>
+
+<span class="token comment">-- 插入数据到 imooc_user 表</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>imooc_user<span class="token punctuation">`</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>name<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>age<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token string">'qinyi'</span><span class="token punctuation">,</span> <span class="token number">19</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>imooc_user<span class="token punctuation">`</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>name<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>age<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token string">'abc'</span><span class="token punctuation">,</span> <span class="token number">32</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>imooc_user<span class="token punctuation">`</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>name<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>age<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token string">'xyz'</span><span class="token punctuation">,</span> <span class="token number">30</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>imooc_user<span class="token punctuation">`</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>name<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>age<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token string">'mno'</span><span class="token punctuation">,</span> <span class="token number">29</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">-- 插入数据到 imooc_course 表</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>imooc_course<span class="token punctuation">`</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>cname<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token string">'广告系统'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>imooc_course<span class="token punctuation">`</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>cname<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token string">'优惠券系统'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>imooc_course<span class="token punctuation">`</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>cname<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token string">'卡包系统'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>imooc_course<span class="token punctuation">`</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>cname<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token string">'Java'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>imooc_course<span class="token punctuation">`</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>cname<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token string">'Python'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>imooc_course<span class="token punctuation">`</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>cname<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token string">'MySQL'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">INSERT</span> <span class="token keyword">INTO</span> <span class="token punctuation">`</span>imooc_course<span class="token punctuation">`</span> <span class="token punctuation">(</span><span class="token punctuation">`</span>id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>user_id<span class="token punctuation">`</span><span class="token punctuation">,</span> <span class="token punctuation">`</span>cname<span class="token punctuation">`</span><span class="token punctuation">)</span> <span class="token keyword">VALUES</span> <span class="token punctuation">(</span><span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">,</span> <span class="token string">'Linux'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">我们创建了两张数据表：imooc_user 和 imooc_course，你可以很容易发现 imooc_course 表中的 user_id 是 imooc_user 表的逻辑外键。且插入的数据里面，两张表各自有对方不存在的记录（仔细看看，你会发现的），这当然也是为后文做准备。</p>
+</div><div class="cl-preview-section"><h2 id="出现频率最高的连接查询" style="font-size: 30px;">1 出现频率最高的连接查询</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">我们最常遇到的复杂查询就是连接查询了，它是将多个表（绝大多数情况下是两张表）联合起来查询，连接的方式一共有四种：内连接、外连接、自然连接和交叉连接。连接查询的最终目的是在一次查询中获取多张表的数据。下面，开始我们的连接查询之旅吧。</p>
+</div><div class="cl-preview-section"><h3 id="内连接">1.1 内连接</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">内连接是有条件匹配的连接，多个表之间依据给定的条件进行连接，并保留符合匹配结果的记录。以两张表的连接举例，它所表达的含义是：从左表（SQL 语句中位于左边的表）中取出一条记录，与右表中的所有记录去匹配，保留匹配成功的记录，并拼接打印。它的语法如下所示：</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">SELECT</span> col1<span class="token punctuation">,</span> col2 <span class="token keyword">FROM</span> <span class="token keyword">left</span> <span class="token punctuation">[</span><span class="token keyword">INNER</span><span class="token punctuation">]</span> <span class="token keyword">JOIN</span> <span class="token keyword">right</span> <span class="token keyword">ON</span> <span class="token keyword">left</span><span class="token punctuation">.</span>colx <span class="token operator">=</span> <span class="token keyword">right</span><span class="token punctuation">.</span>coly
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">举个例子来看看吧，我想要查询 imooc_user 表对应的 imooc_course 信息，可以这样：</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token comment">-- 使用 INNER JOIN 连接右表</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">AS</span> <span class="token keyword">user</span> <span class="token keyword">INNER</span> <span class="token keyword">JOIN</span> imooc_course <span class="token keyword">AS</span> course <span class="token keyword">ON</span> <span class="token keyword">user</span><span class="token punctuation">.</span>user_id <span class="token operator">=</span> course<span class="token punctuation">.</span>user_id<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+----+---------+-----------------+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> name  <span class="token operator">|</span> age <span class="token operator">|</span> id <span class="token operator">|</span> user_id <span class="token operator">|</span> cname           <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+----+---------+-----------------+</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>  <span class="token number">1</span> <span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> 广告系统         <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>  <span class="token number">2</span> <span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> 优惠券系统       <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>  <span class="token number">3</span> <span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> 卡包系统         <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>  <span class="token number">32</span> <span class="token operator">|</span>  <span class="token number">4</span> <span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> Java            <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>  <span class="token number">32</span> <span class="token operator">|</span>  <span class="token number">5</span> <span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> Python          <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">3</span> <span class="token operator">|</span> xyz   <span class="token operator">|</span>  <span class="token number">30</span> <span class="token operator">|</span>  <span class="token number">6</span> <span class="token operator">|</span>       <span class="token number">3</span> <span class="token operator">|</span> MySQL           <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+----+---------+-----------------+</span>
+
+<span class="token comment">-- 使用 JOIN 连接右表，与 INNER JOIN 结果一致</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">AS</span> <span class="token keyword">user</span> <span class="token keyword">JOIN</span> imooc_course <span class="token keyword">AS</span> course <span class="token keyword">ON</span> <span class="token keyword">user</span><span class="token punctuation">.</span>user_id <span class="token operator">=</span> course<span class="token punctuation">.</span>user_id<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+----+---------+-----------------+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> name  <span class="token operator">|</span> age <span class="token operator">|</span> id <span class="token operator">|</span> user_id <span class="token operator">|</span> cname           <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+----+---------+-----------------+</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>  <span class="token number">1</span> <span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> 广告系统         <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>  <span class="token number">2</span> <span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> 优惠券系统       <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>  <span class="token number">3</span> <span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> 卡包系统         <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>  <span class="token number">32</span> <span class="token operator">|</span>  <span class="token number">4</span> <span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> Java            <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>  <span class="token number">32</span> <span class="token operator">|</span>  <span class="token number">5</span> <span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> Python          <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">3</span> <span class="token operator">|</span> xyz   <span class="token operator">|</span>  <span class="token number">30</span> <span class="token operator">|</span>  <span class="token number">6</span> <span class="token operator">|</span>       <span class="token number">3</span> <span class="token operator">|</span> MySQL           <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+----+---------+-----------------+</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">可以看到，连接查询默认（SELECT *）会返回两张表的所有列，如果我们不需要，可以单独指定想要的列。ON 子句的功能与 WHERE 子句的功能是类似的，用于条件匹配，当然，ON 子句之后也可以指定单表的条件。例如：</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">AS</span> <span class="token keyword">user</span> <span class="token keyword">JOIN</span> imooc_course <span class="token keyword">AS</span> course <span class="token keyword">ON</span> <span class="token keyword">user</span><span class="token punctuation">.</span>user_id <span class="token operator">=</span> course<span class="token punctuation">.</span>user_id <span class="token operator">AND</span> <span class="token keyword">user</span><span class="token punctuation">.</span>user_id <span class="token operator">&lt;=</span> <span class="token number">1</span>
+</code></pre>
+</div><div class="cl-preview-section"><h3 id="外连接">1.2 外连接</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">从内连接的查询结果可以看出，它只会保留两个表中完全匹配的记录，而外连接则不同，不论 “主表” 符不符合匹配条件，记录都将被保留。而 “主表” 的依据则是外连接的两种方式：左外连接和右外连接。左外连接保留左表，即此时左表是 “主表”，右外连接则刚好相反。外连接的语法如下：</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token comment">-- 左外连接</span>
+<span class="token keyword">SELECT</span> col1<span class="token punctuation">,</span> col2 <span class="token keyword">FROM</span> <span class="token keyword">left</span> <span class="token keyword">LEFT</span> <span class="token keyword">JOIN</span> <span class="token keyword">right</span> <span class="token keyword">ON</span> <span class="token keyword">left</span><span class="token punctuation">.</span>colx <span class="token operator">=</span> <span class="token keyword">right</span><span class="token punctuation">.</span>coly
+
+<span class="token comment">-- 右外连接</span>
+<span class="token keyword">SELECT</span> col1<span class="token punctuation">,</span> col2 <span class="token keyword">FROM</span> <span class="token keyword">left</span> <span class="token keyword">RIGHT</span> <span class="token keyword">JOIN</span> <span class="token keyword">right</span> <span class="token keyword">ON</span> <span class="token keyword">left</span><span class="token punctuation">.</span>colx <span class="token operator">=</span> <span class="token keyword">right</span><span class="token punctuation">.</span>coly
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">语法层面上看，与内连接几乎是一样的，只是把 INNER 换成了 LEFT/RIGHT。同样，我们还是看两个例子：</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token comment">-- 左外连接</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">AS</span> <span class="token keyword">user</span> <span class="token keyword">LEFT</span> <span class="token keyword">JOIN</span> imooc_course <span class="token keyword">AS</span> course <span class="token keyword">ON</span> <span class="token keyword">user</span><span class="token punctuation">.</span>user_id <span class="token operator">=</span> course<span class="token punctuation">.</span>user_id<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+------+---------+-----------------+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> name  <span class="token operator">|</span> age <span class="token operator">|</span> id   <span class="token operator">|</span> user_id <span class="token operator">|</span> cname           <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+------+---------+-----------------+</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>    <span class="token number">1</span> <span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> 广告系统         <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>    <span class="token number">2</span> <span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> 优惠券系统       <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>    <span class="token number">3</span> <span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> 卡包系统         <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>  <span class="token number">32</span> <span class="token operator">|</span>    <span class="token number">4</span> <span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> Java            <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>  <span class="token number">32</span> <span class="token operator">|</span>    <span class="token number">5</span> <span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> Python          <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">3</span> <span class="token operator">|</span> xyz   <span class="token operator">|</span>  <span class="token number">30</span> <span class="token operator">|</span>    <span class="token number">6</span> <span class="token operator">|</span>       <span class="token number">3</span> <span class="token operator">|</span> MySQL           <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">4</span> <span class="token operator">|</span> mno   <span class="token operator">|</span>  <span class="token number">29</span> <span class="token operator">|</span> <span class="token boolean">NULL</span> <span class="token operator">|</span>    <span class="token boolean">NULL</span> <span class="token operator">|</span> <span class="token boolean">NULL</span>            <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+------+---------+-----------------+</span>
+
+<span class="token comment">-- 右外连接</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">AS</span> <span class="token keyword">user</span> <span class="token keyword">RIGHT</span> <span class="token keyword">JOIN</span> imooc_course <span class="token keyword">AS</span> course <span class="token keyword">ON</span> <span class="token keyword">user</span><span class="token punctuation">.</span>user_id <span class="token operator">=</span> course<span class="token punctuation">.</span>user_id<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+------+----+---------+-----------------+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> name  <span class="token operator">|</span> age  <span class="token operator">|</span> id <span class="token operator">|</span> user_id <span class="token operator">|</span> cname           <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+------+----+---------+-----------------+</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>   <span class="token number">19</span> <span class="token operator">|</span>  <span class="token number">1</span> <span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> 广告系统         <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>   <span class="token number">19</span> <span class="token operator">|</span>  <span class="token number">2</span> <span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> 优惠券系统       <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>   <span class="token number">19</span> <span class="token operator">|</span>  <span class="token number">3</span> <span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> 卡包系统         <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>   <span class="token number">32</span> <span class="token operator">|</span>  <span class="token number">4</span> <span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> Java            <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>   <span class="token number">32</span> <span class="token operator">|</span>  <span class="token number">5</span> <span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> Python          <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">3</span> <span class="token operator">|</span> xyz   <span class="token operator">|</span>   <span class="token number">30</span> <span class="token operator">|</span>  <span class="token number">6</span> <span class="token operator">|</span>       <span class="token number">3</span> <span class="token operator">|</span> MySQL           <span class="token operator">|</span>
+<span class="token operator">|</span>    <span class="token boolean">NULL</span> <span class="token operator">|</span> <span class="token boolean">NULL</span>  <span class="token operator">|</span> <span class="token boolean">NULL</span> <span class="token operator">|</span>  <span class="token number">7</span> <span class="token operator">|</span>       <span class="token number">5</span> <span class="token operator">|</span> Linux           <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+------+----+---------+-----------------+</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">正如之前所说，即使没有匹配，主表也会保留记录。但是，由于此时副表（相对于主表）不能完成匹配，就会以 NULL 返回。内连接和外连接不仅非常相似，它们也几乎包揽了连接查询的话题，所以，理解和应用就从现在开始吧。</p>
+</div><div class="cl-preview-section"><h3 id="自然连接">1.3 自然连接</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">自然连接的含义是自动匹配连接条件，MySQL 自动的以字段名作为匹配模式，同名的字段（这也就是为什么我在创建 imooc_user 表时，指定主键的名称是 user_id，目的就是为了与 imooc_course 相对应）就会作为条件，不论是几个。自然连接分为自然内连接和自然外连接，语法及说明如下：</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token comment">-- 自然内连接，与内连接类似，但是不提供连接条件</span>
+<span class="token keyword">SELECT</span> col1<span class="token punctuation">,</span> col2 <span class="token keyword">FROM</span> <span class="token keyword">left</span> <span class="token keyword">NATURAL</span> <span class="token keyword">JOIN</span> <span class="token keyword">right</span>
+
+<span class="token comment">-- 自然外连接，与外连接类似，但是不提供连接条件</span>
+<span class="token keyword">SELECT</span> col1<span class="token punctuation">,</span> col2 <span class="token keyword">FROM</span> <span class="token keyword">left</span> <span class="token keyword">NATURAL</span> <span class="token keyword">LEFT</span><span class="token operator">/</span><span class="token keyword">RIGHT</span> <span class="token keyword">JOIN</span> <span class="token keyword">right</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">自然连接的思想和使用方法都是非常简单的，但是，由于它要求列名需要一致（相同的列名也许不能作为匹配条件），可用性并不高。下面，给出几个简单的示例（大多数情况下，知道在 MySQL 中存在自然连接这个概念就可以）：</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token comment">-- 自然内连接</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">NATURAL</span> <span class="token keyword">JOIN</span> imooc_course<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+----+-----------------+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> name  <span class="token operator">|</span> age <span class="token operator">|</span> id <span class="token operator">|</span> cname           <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+----+-----------------+</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>  <span class="token number">1</span> <span class="token operator">|</span> 广告系统         <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>  <span class="token number">2</span> <span class="token operator">|</span> 优惠券系统       <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>  <span class="token number">3</span> <span class="token operator">|</span> 卡包系统         <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>  <span class="token number">32</span> <span class="token operator">|</span>  <span class="token number">4</span> <span class="token operator">|</span> Java            <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>  <span class="token number">32</span> <span class="token operator">|</span>  <span class="token number">5</span> <span class="token operator">|</span> Python          <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">3</span> <span class="token operator">|</span> xyz   <span class="token operator">|</span>  <span class="token number">30</span> <span class="token operator">|</span>  <span class="token number">6</span> <span class="token operator">|</span> MySQL           <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+----+-----------------+</span>
+
+<span class="token comment">-- 自然左外连接</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">NATURAL</span> <span class="token keyword">LEFT</span> <span class="token keyword">JOIN</span> imooc_course<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+------+-----------------+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> name  <span class="token operator">|</span> age <span class="token operator">|</span> id   <span class="token operator">|</span> cname           <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+------+-----------------+</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>    <span class="token number">1</span> <span class="token operator">|</span> 广告系统         <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>    <span class="token number">2</span> <span class="token operator">|</span> 优惠券系统       <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>    <span class="token number">3</span> <span class="token operator">|</span> 卡包系统         <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>  <span class="token number">32</span> <span class="token operator">|</span>    <span class="token number">4</span> <span class="token operator">|</span> Java            <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>  <span class="token number">32</span> <span class="token operator">|</span>    <span class="token number">5</span> <span class="token operator">|</span> Python          <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">3</span> <span class="token operator">|</span> xyz   <span class="token operator">|</span>  <span class="token number">30</span> <span class="token operator">|</span>    <span class="token number">6</span> <span class="token operator">|</span> MySQL           <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">4</span> <span class="token operator">|</span> mno   <span class="token operator">|</span>  <span class="token number">29</span> <span class="token operator">|</span> <span class="token boolean">NULL</span> <span class="token operator">|</span> <span class="token boolean">NULL</span>            <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+------+-----------------+</span>
+
+<span class="token comment">-- 自然右外连接</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">NATURAL</span> <span class="token keyword">RIGHT</span> <span class="token keyword">JOIN</span> imooc_course<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+----+-----------------+-------+------+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> id <span class="token operator">|</span> cname           <span class="token operator">|</span> name  <span class="token operator">|</span> age  <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+----+-----------------+-------+------+</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span>  <span class="token number">1</span> <span class="token operator">|</span> 广告系统         <span class="token operator">|</span> qinyi <span class="token operator">|</span>   <span class="token number">19</span> <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span>  <span class="token number">2</span> <span class="token operator">|</span> 优惠券系统       <span class="token operator">|</span> qinyi <span class="token operator">|</span>   <span class="token number">19</span> <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span>  <span class="token number">3</span> <span class="token operator">|</span> 卡包系统         <span class="token operator">|</span> qinyi <span class="token operator">|</span>   <span class="token number">19</span> <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span>  <span class="token number">4</span> <span class="token operator">|</span> Java            <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>   <span class="token number">32</span> <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span>  <span class="token number">5</span> <span class="token operator">|</span> Python          <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>   <span class="token number">32</span> <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">3</span> <span class="token operator">|</span>  <span class="token number">6</span> <span class="token operator">|</span> MySQL           <span class="token operator">|</span> xyz   <span class="token operator">|</span>   <span class="token number">30</span> <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">5</span> <span class="token operator">|</span>  <span class="token number">7</span> <span class="token operator">|</span> Linux           <span class="token operator">|</span> <span class="token boolean">NULL</span>  <span class="token operator">|</span> <span class="token boolean">NULL</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+----+-----------------+-------+------+</span>
+</code></pre>
+</div><div class="cl-preview-section"><h3 id="交叉连接">1.4 交叉连接</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">相对于之前的有条件连接，交叉连接也被称为 “无条件连接”，它会将左表的每一条记录与右表的每一条记录进行连接，结果中的列数等于两表列数之和，行数等于两表行数之积。也就是说交叉连接的结果是 “笛卡尔积”。它的语法如下所示：</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">SELECT</span> col1<span class="token punctuation">,</span> col2 <span class="token keyword">FROM</span> <span class="token keyword">left</span> <span class="token keyword">CROSS</span> <span class="token keyword">JOIN</span> <span class="token keyword">right</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">需要注意，由于交叉连接的结果是两张表记录的乘积，所以，返回的数据会特别多，不应该轻易执行这样的操作。实际上，在我们的大多数应用中，笛卡尔积并没有意义，所以，出现的概率极低，有兴趣的话可以执行如下语句查看结果（返回数据太多，且没有实际意义，我这里不贴出输出）。</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">CROSS</span> <span class="token keyword">JOIN</span> imooc_course
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">连接查询是 MySQL 高级查询中的重中之重，以至于我经常听到朋友说：用了 MySQL 这么些年，高级查询也就只用过连接。其实事实也真的就是这样，连接查询不仅面向众多的业务需求，而且难度也适中，所以，市场自然也就会更广阔一些。</p>
+</div><div class="cl-preview-section"><h2 id="常常被忽略的联合查询" style="font-size: 30px;">2 常常被忽略的联合查询</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">联合查询的关键字是 UNION，它将两个或多个查询的结果拼接在一起返回。正是由于它会将不同的查询结果拼接在一起，所以，每一个查询结果的字段数必须是相同的。特殊的是，拼接过程并不会在意数据类型（但还是强烈推荐对应列的数据类型一致，否则，很容易在代码中出现类型错误）。下面，我们还是先来看一个简单的例子（并没有实际意义，只是作为示例说明）：</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql">mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> name<span class="token punctuation">,</span> age <span class="token keyword">FROM</span> imooc_user <span class="token keyword">UNION</span> <span class="token keyword">SELECT</span> user_id<span class="token punctuation">,</span> cname <span class="token keyword">FROM</span> imooc_course<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">-------+-----------------+</span>
+<span class="token operator">|</span> name  <span class="token operator">|</span> age             <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">-------+-----------------+</span>
+<span class="token operator">|</span> qinyi <span class="token operator">|</span> <span class="token number">19</span>              <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span> <span class="token number">32</span>              <span class="token operator">|</span>
+<span class="token operator">|</span> xyz   <span class="token operator">|</span> <span class="token number">30</span>              <span class="token operator">|</span>
+<span class="token operator">|</span> mno   <span class="token operator">|</span> <span class="token number">29</span>              <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">1</span>     <span class="token operator">|</span> 广告系统         <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">1</span>     <span class="token operator">|</span> 优惠券系统       <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">1</span>     <span class="token operator">|</span> 卡包系统         <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">2</span>     <span class="token operator">|</span> Java            <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">2</span>     <span class="token operator">|</span> Python          <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">3</span>     <span class="token operator">|</span> MySQL           <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">5</span>     <span class="token operator">|</span> Linux           <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">-------+-----------------+</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">可以看到，正如之前所述，两个表的查询结果拼接在一起返回。UNION 有个特性，它会去除重复的行（所有的字段都相同），如果想要完整的数据，则需要加上 ALL 选项，可以自行执行如下两条 SQL 语句并分析结果。</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">SELECT</span> user_id <span class="token keyword">FROM</span> imooc_user <span class="token keyword">UNION</span> <span class="token keyword">SELECT</span> user_id <span class="token keyword">FROM</span> imooc_course
+<span class="token keyword">SELECT</span> user_id <span class="token keyword">FROM</span> imooc_user <span class="token keyword">UNION</span> <span class="token keyword">ALL</span> <span class="token keyword">SELECT</span> user_id <span class="token keyword">FROM</span> imooc_course
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">联合查询有一个最容易出错的地方：对结果进行排序。且它会把多个查询结果进行拼接，单表结果排序与总体排序又该怎么办 ？首先，对于单个查询结果排序的话，需要将它的 SELECT 语句用括号括起来，同时配合 LIMIT 使用（如果不配合 LIMIT，会被语法分析器优化时去除，导致排序失效）。示例如下：</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql">mysql<span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token keyword">SELECT</span> name<span class="token punctuation">,</span> age <span class="token keyword">FROM</span> imooc_user <span class="token keyword">ORDER</span> <span class="token keyword">BY</span> age <span class="token keyword">DESC</span> <span class="token keyword">LIMIT</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token keyword">UNION</span> <span class="token keyword">SELECT</span> user_id<span class="token punctuation">,</span> cname <span class="token keyword">FROM</span> imooc_course<span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">------+-----------------+</span>
+<span class="token operator">|</span> name <span class="token operator">|</span> age             <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">------+-----------------+</span>
+<span class="token operator">|</span> <span class="token number">abc</span>  <span class="token operator">|</span> <span class="token number">32</span>              <span class="token operator">|</span>
+<span class="token operator">|</span> xyz  <span class="token operator">|</span> <span class="token number">30</span>              <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">1</span>    <span class="token operator">|</span> 广告系统         <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">1</span>    <span class="token operator">|</span> 优惠券系统       <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">1</span>    <span class="token operator">|</span> 卡包系统         <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">2</span>    <span class="token operator">|</span> Java            <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">2</span>    <span class="token operator">|</span> Python          <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">3</span>    <span class="token operator">|</span> MySQL           <span class="token operator">|</span>
+<span class="token operator">|</span> <span class="token number">5</span>    <span class="token operator">|</span> Linux           <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">------+-----------------+</span>
+
+<span class="token comment">-- 可以试试如下的联合查询，ORDER BY 之后并没有 LIMIT</span>
+<span class="token punctuation">(</span><span class="token keyword">SELECT</span> name<span class="token punctuation">,</span> age <span class="token keyword">FROM</span> imooc_user <span class="token keyword">ORDER</span> <span class="token keyword">BY</span> age <span class="token keyword">DESC</span><span class="token punctuation">)</span> <span class="token keyword">UNION</span> <span class="token keyword">SELECT</span> user_id<span class="token punctuation">,</span> cname <span class="token keyword">FROM</span> imooc_course
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">如果是针对最终的查询结果进行排序，在最后一个 SELECT 语句之后使用 ORDER BY 即可，这里示例我不再给出，我相信你可以写出来。</p>
+</div><div class="cl-preview-section"><h2 id="不易理解的子查询" style="font-size: 30px;">3 不易理解的子查询</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">子查询是嵌套在查询语句中的查询，按照它出现的位置（使用的关键字）可以分为三类：FROM 子查询、WHERE 子查询和 EXISTS 子查询。子查询可以包含普通 SELECT 可以包含的任何子句，例如：DISTINCT、GROUP BY、ORDER BY、LIMIT 等等。下面，我们就依次来看看这三类子查询的玩法。</p>
+</div><div class="cl-preview-section"><h3 id="from-子查询">3.1 FROM 子查询</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">这一类子查询是跟在 FROM 子句之后的，它的语义是：先查出 “一张表”，再去查询这张表。等等，这是什么意思 ？为什么我没有看懂呢 ？莫慌，刚看到这句话，我也不明白。看个例子吧，虽然它本身没什么意义。</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token comment">-- 报错的信息提示：子查询派生出的表必须要有个名字</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> name<span class="token punctuation">,</span> age <span class="token keyword">FROM</span> <span class="token punctuation">(</span><span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">WHERE</span> name <span class="token operator">=</span> <span class="token string">'qinyi'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ERROR <span class="token number">1248</span> <span class="token punctuation">(</span><span class="token number">42000</span><span class="token punctuation">)</span>: Every derived <span class="token keyword">table</span> must have its own alias
+
+<span class="token comment">-- 给子查询派生出的表指定 user 别名</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> name<span class="token punctuation">,</span> age <span class="token keyword">FROM</span> <span class="token punctuation">(</span><span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">WHERE</span> name <span class="token operator">=</span> <span class="token string">'qinyi'</span><span class="token punctuation">)</span> <span class="token keyword">AS</span> <span class="token keyword">user</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">-------+-----+</span>
+<span class="token operator">|</span> name  <span class="token operator">|</span> age <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">-------+-----+</span>
+<span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">-------+-----+</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">从这个例子里，我们就可以得出结论了：FROM 子查询实际上是得到了一张表，我们查询的就是这张派生表。FROM 子查询常常用于将复杂的查询分解，将复杂的查询条件拆解到多次查询中去。</p>
+</div><div class="cl-preview-section"><h3 id="where-子查询">3.2 WHERE 子查询</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">顾名思义，WHERE 子查询是跟在 WHERE 条件中的，它的语义是：先根据条件筛选，再根据条件查询。看到这句话的你，是不是接近崩溃了 ？不过，这事儿真不怪我，不信你就看看下面的例子。</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token comment">-- WHERE 子查询结果是多个值，使用 IN 查询</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">WHERE</span> user_id <span class="token operator">IN</span> <span class="token punctuation">(</span><span class="token keyword">SELECT</span> user_id <span class="token keyword">FROM</span> imooc_course <span class="token keyword">WHERE</span> user_id <span class="token operator">&lt;</span> <span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> name  <span class="token operator">|</span> age <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>
+<span class="token operator">|</span>       <span class="token number">2</span> <span class="token operator">|</span> <span class="token number">abc</span>   <span class="token operator">|</span>  <span class="token number">32</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+</span>
+
+<span class="token comment">-- WHERE 子查询结果是单个值，使用等于就可以（当然也可以用 IN）</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">WHERE</span> user_id <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">SELECT</span> user_id <span class="token keyword">FROM</span> imooc_course <span class="token keyword">WHERE</span> cname <span class="token operator">LIKE</span> <span class="token string">'广告%'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> name  <span class="token operator">|</span> age <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">看到示例的你一定又明白了 WHERE 子查询是怎样的查询，其实，它也并不难理解。WHERE 子查询的常见用法是把其他表的查询结果当做当前表的查询条件进行二次查询，非常类似于 JOIN 的思想。</p>
+</div><div class="cl-preview-section"><h3 id="exists-子查询">3.3 EXISTS 子查询</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">这一类子查询包裹在 EXISTS 关键字里面，它所表达的语义是：存在才触发。相对于 FROM 和 WHERE 子查询来说，EXISTS 子查询就容易理解多了。同样，我们还是看两个例子吧：</p>
+</div><div class="cl-preview-section"><pre class=" language-sql"><code class="prism  language-sql"><span class="token comment">-- 存在课程名是 JAVA 的课程，所以，子查询存在</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">WHERE</span> <span class="token keyword">EXISTS</span><span class="token punctuation">(</span><span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_course <span class="token keyword">WHERE</span> cname <span class="token operator">LIKE</span> <span class="token string">'%JAVA%'</span><span class="token punctuation">)</span> <span class="token operator">AND</span> user_id <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+</span>
+<span class="token operator">|</span> user_id <span class="token operator">|</span> name  <span class="token operator">|</span> age <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+</span>
+<span class="token operator">|</span>       <span class="token number">1</span> <span class="token operator">|</span> qinyi <span class="token operator">|</span>  <span class="token number">19</span> <span class="token operator">|</span>
+<span class="token operator">+</span><span class="token comment">---------+-------+-----+</span>
+
+<span class="token comment">-- 不存在课程名包含 PHP 的课程，所以，子查询不存在</span>
+mysql<span class="token operator">&gt;</span> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_user <span class="token keyword">WHERE</span> <span class="token keyword">EXISTS</span><span class="token punctuation">(</span><span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">FROM</span> imooc_course <span class="token keyword">WHERE</span> cname <span class="token operator">LIKE</span> <span class="token string">'%PHP%'</span><span class="token punctuation">)</span> <span class="token operator">AND</span> user_id <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span>
+Empty <span class="token keyword">set</span> <span class="token punctuation">(</span><span class="token number">0.00</span> sec<span class="token punctuation">)</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">单单看这三类子查询的定义肯定是不易理解的，甚至是不知所云的。所以，学习新的知识点，不要盲目的去看它的定义，一定要结合着实例去看。很多时候，高大上的名词背后仅仅是简单技术的包装。最后，由于子查询会让 SQL 语句变得太长，且使用场景相对有限，出场机会并不会太多。</p>
+</div><div class="cl-preview-section"><h2 id="总结" style="font-size: 30px;">4 总结</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">为了讲解清楚 MySQL 中的高级查询，这一节里我给出了很多示例，但是这些仍远远不够。之所以称它们是高级查询，因为真的很难，而且不容易记住。所以，多去设想一些场景（这也并不容易），并尝试使用这些高级查询解决你 fake 的难题，才能做到学以致用。另外，记住，学习的进程一定是温故而知新的，谁也不会有那么好的记性。</p>
+</div><div class="cl-preview-section"><h2 id="问题" style="font-size: 30px;">5 问题</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">关于连接查询，你在工作、面试中遇到过这些问题吗 ？你是怎么做的 ？<br><br>
+关于联合查询，你能想到一些合适的使用场景吗 ？<br><br>
+子查询可以改造为连接查询吗 ？怎么做呢 ？</p>
+</div><div class="cl-preview-section"><h2 id="参考资料" style="font-size: 30px;">6 参考资料</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">《高性能 MySQL（第三版）》<br><br>
+<a href="https://dev.mysql.com/doc/refman/5.7/en/select.html">MySQL 官方文档：SELECT Statement</a></p>
+</div>}
+                        </div>
+                    </div>
+                                            <!-- 买过的阅读 -->
+                        <div class="art-next-prev clearfix">
+                                                                                                <!-- 已买且开放 或者可以试读 -->
+                                    <a href="/read/71/article/1693">
+                                                                    <div class="prev l clearfix">
+                                        <div class="icon l">
+                                            <i class="imv2-arrow3_l"></i>
+                                        </div>
+                                        <p>
+                                            10 索引定义及其优化，你知道多少？
+                                        </p>
+                                    </div>
+                                </a>
+                                                                                                                            <!-- 已买且开放 或者可以试读 -->
+                                    <a href="/read/71/article/1699">
+                                                                    <div class="next r clearfix">
+                                        <p>
+                                            12 死锁是怎么出现的？又是怎么解决的呢？
+                                        </p>
+                                        <div class="icon r">
+                                            <i class="imv2-arrow3_r"></i>
+                                        </div>
+
+                                    </div>
+                                </a>
+                                                    </div>
+                                    </div>
+                <div class="comments-con js-comments-con" id="coments_con">
+                </div>
+
+                
+            </div>
+            
+            
+            
+
+        </div>
+    </div>
+</div>
+
+<div class="modal modal-jiaQun-new hide" id="modal-jiaQun">
+    <div class="inner" style="">
+        <div class="modal-close js-close-jiaQun">
+            <i class="imv2-close"></i>
+        </div>
+        <div class="content">
+            <img src="https://img2.sycdn.imooc.com/5eba10270001392b05330597.jpg">
+            <div class="right-info">
+                <div class="title">
+                    扫码加入慕课前沿技术核心用户群
+                </div>
+                <div class="desc">
+                                            <p class="mb6">验证信息：<span id="joincode">2010291942557129</span><span class="copy js-copy-joincode">复制</span></p>
+                                        <p class="mb6">QQ讨论群号：729941811</p>
+                                            <p>QQ群URL：<a href="https://jq.qq.com/?_wv=1027&amp;k=5WJLMxV" target="_blank">点击访问</a></p>
+                                    </div>
+            </div>
+            <p class="tip">若遇到搜索不到QQ群或加群失败，请联系客服邮箱:kf@imooc.com</p>
+        </div>
+    </div>
+</div>
+ 
+<!-- 专栏介绍页专栏评价 -->
+
+<!-- 专栏介绍页底部三条评价 -->
+
+<!-- 专栏阅读页弹层目录和介绍页页面目录 -->
+
+<!-- 专栏阅读页发布回复 -->
+
+<!-- 专栏阅读页发布评论 -->
+
+<!-- 专栏阅读页底部评论 -->
+
+<!-- 专栏阅读 单个 评论 -->
+
+<!-- 新增回复和展开三条以外回复 -->
+
+<!-- 立即订阅的弹窗 -->
+
+
+
+
+
+
+
+
+
+
+
+
+</div></body></html>

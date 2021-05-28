@@ -1,0 +1,421 @@
+<html><head><meta charset="utf-8"><title>13 学会对MySQL做基准测试，掌握数据库性能-慕课专栏</title>
+			<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+			<meta name="renderer" content="webkit">
+			<meta property="qc:admins" content="77103107776157736375">
+			<meta property="wb:webmaster" content="c4f857219bfae3cb">
+			<meta http-equiv="Access-Control-Allow-Origin" content="*">
+			<meta http-equiv="Cache-Control" content="no-transform ">
+			<meta http-equiv="Cache-Control" content="no-siteapp">
+			<link rel="apple-touch-icon" sizes="76x76" href="https://www.imooc.com/static/img/common/touch-icon-ipad.png">
+			<link rel="apple-touch-icon" sizes="120x120" href="https://www.imooc.com/static/img/common/touch-icon-iphone-retina.png">
+			<link rel="apple-touch-icon" sizes="152x152" href="https://www.imooc.com/static/img/common/touch-icon-ipad-retina.png">
+			<link href="https://moco.imooc.com/captcha/style/captcha.min.css" rel="stylesheet">
+			<link rel="stylesheet" href="https://www.imooc.com/static/moco/v1.0/dist/css/moco.min.css?t=201907021539" type="text/css">
+			<link rel="stylesheet" href="https://www.imooc.com/static/lib/swiper/swiper-3.4.2.min.css?t=201907021539">
+			<link rel="stylesheet" href="https://static.mukewang.com/static/css/??base.css,common/common-less.css?t=2.5,column/zhuanlanChapter-less.css?t=2.5,course/inc/course_tipoff-less.css?t=2.5?v=201907051055" type="text/css">
+			<link charset="utf-8" rel="stylesheet" href="https://www.imooc.com/static/lib/ueditor/themes/imooc/css/ueditor.css?v=201907021539"><link rel="stylesheet" href="https://www.imooc.com/static/lib/baiduShare/api/css/share_style0_16.css?v=6aba13f0.css"></head>
+			<body><div id="main">
+
+
+<div class="main-con hide-menu">
+    <!-- 左侧菜单 & 索引 -->
+    
+    <div class="right-content" style="padding-left: 0px;">
+        <div class="container clearfix" id="top" style="width: 1134px; display: block;">
+            
+            
+            <div class="center_con js-center_con l" style="width: 1134px;">
+                <div class="article-con">
+                                            <!-- 买过的阅读 -->
+                        
+
+                    
+                    <div class="art-title" style="margin-top: 0px;">
+                        13 学会对MySQL做基准测试，掌握数据库性能
+                    </div>
+                    <div class="art-info clearfix">
+                        
+                        <span class="l">
+                            更新时间：2020-03-30 10:13:22
+                        </span>
+                    </div>
+                    <div class="art-top">
+                                                <img src="https://img1.sycdn.imooc.com/5e815564000196f722471500.jpg" alt="">
+                                                                        <div class="famous-word-box">
+                            <img src="https://www.imooc.com/static/img/column/bg-l.png" alt="" class="bg1 bg">
+                            <img src="https://www.imooc.com/static/img/column/bg-r.png" alt="" class="bg2 bg">
+                            <div class="famous-word">学习要注意到细处，不是粗枝大叶的，这样可以逐步学习、摸索，找到客观规律。 —— 徐特立<p></p></div>
+                        </div>
+                                            </div>
+                    <div class="art-content js-lookimg">
+                        <div id="article_content">
+                            <div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">不论你是做哪个方向，使用哪种框架或工具，对于你的最终作品，都一定离不开基准测试。简单的说，基准测试就是要看看产品的性能是否符合预期，或达到某种预定义的指标。MySQL 作为明星级存储工具，应用范围之广不必多说。为了预见 MySQL 的可用性，我们就需要对 MySQL 做基准测试。这一节里，我会先去讲解基准测试的理论，再去介绍 sysbench（基准测试工具），最后，演示说明针对 MySQL 的基准测试。</p>
+</div><div class="cl-preview-section"><h2 id="关于基准测试，你需要知道这些" style="font-size: 30px;">1 关于基准测试，你需要知道这些</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">通常，我们去认识一种新的技术，都会带着三个问题去学习并思考：它是什么 ？它能够做什么 ？又应该怎样使用它呢 ？接下来，我会从理论层面去解答前两个问题。</p>
+</div><div class="cl-preview-section"><h3 id="什么是基准测试">1.1 什么是基准测试</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">基准测试可以理解为对系统的一种压力测试（也就是常说的压测），但是它又与压测有着显著的区别。压测通常都是需要考虑业务逻辑的，毕竟它是业务上线之前的最后一道工序，需要使用真实的数据（或近似数据）。而基准测试则宽泛很多，它不要求去关注业务实现，数据可以由工具生成，所以，更加简单、直接。</p>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">而对于数据库的基准测试，它其实是有定义的：</p>
+</div><div class="cl-preview-section"><blockquote>
+<p style="font-size: 20px; line-height: 38px;">数据库的基准测试是对数据库的性能指标进行定量的、可复现的、可对比的测试。</p>
+</blockquote>
+</div><div class="cl-preview-section"><h3 id="基准测试的作用">1.2 基准测试的作用</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">如果你经常接触业务系统，你就一定知道，系统的性能瓶颈基本都在 IO 上。IO 又会分为两类：磁盘 IO 和网络 IO。对于网络 IO 来说，不确定性太大了，单独的一方很难去做优化。所以，大多数的性能优化都是针对磁盘 IO 的，而这里的磁盘 IO 指的就是数据库的读写操作。</p>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">对数据库的基准测试，就是要分析在当前的环境配置（硬盘配置、操作系统配置、数据库配置等等）下数据库的性能表现。并通过不断的调校配置和测试过程，来找到 MySQL 的最佳性能阈值，提供高可用的环境。</p>
+</div><div class="cl-preview-section"><h3 id="基准测试的指标">1.3 基准测试的指标</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">从出现基准测试，再到逐步发展，关于测试的指标是 “与日俱增” 的。但实际上，常用的数据库指标就那么几个（这样的情况可以引申的案例简直不胜枚举），一起来看一看吧。</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;">TPS：Transactions Per Second 的首字母缩写，每秒处理完成的事务次数</li>
+<li style="font-size: 20px; line-height: 38px;">QPS：Query Per Second 的首字母缩写，每秒查询次数，与 TPS 一样，都是用来衡量系统吞吐量</li>
+<li style="font-size: 20px; line-height: 38px;">响应时间：包含平均、最大、最小响应时间</li>
+<li style="font-size: 20px; line-height: 38px;">并发量：可以同时处理的请求数量</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">在对 MySQL 做基准测试时，一定要去选择专业的工具，不要重复造轮子。sysbench 通用且功能强大，最让人欣喜的是：它非常适合 InnoDB，因为它模拟了许多 InnoDB 的特性。接下来，我们就去学习下 sysbench。</p>
+</div><div class="cl-preview-section"><h2 id="基准测试工具-sysbench" style="font-size: 30px;">2 基准测试工具 sysbench</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">sysbench 确实是一款非常不错的数据库性能测试工具，起码用过的人都说好。下面，我不仅要告诉你 sysbench 能做什么，还要带着你把它安装到你的机器中。最后，讲解它的语法和使用说明。</p>
+</div><div class="cl-preview-section"><h3 id="初识-sysbench">2.1 初识 sysbench</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">sysbench 是跨平台的基准测试工具，支持多线程和多种数据库（Mysql、PostgreSQL、Oracle 等等）。它的测试能力非常广，主要包括：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;">CPU 运算性能</li>
+<li style="font-size: 20px; line-height: 38px;">磁盘 IO 性能</li>
+<li style="font-size: 20px; line-height: 38px;">内存分配及传输速度</li>
+<li style="font-size: 20px; line-height: 38px;">POSIX 线程性能</li>
+<li style="font-size: 20px; line-height: 38px;">数据库性能（OLTP 基准测试）</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">这里需要注意，在谈到测试数据库性能的时候，说的是针对 OLTP（另一类是 OLAP）的基准测试。这里大家不需要担心，因为大多数数据服务都是 OLTP 类型的（可以动手查一查什么是 OLTP，什么又是 OLAP）。</p>
+</div><div class="cl-preview-section"><h3 id="安装-sysbench">2.2 安装 sysbench</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">关于 sysbench 的安装方法，在<a href="https://github.com/akopytov/sysbench">官网</a>中已经给出了详细的说明（如果你的英文比较好，也可以去读一读官网的说明）。sysbench 能够很好的支持 Linux 和 macOS，对于 Windows 来说可能就差强人意了。下面，我将给出在 Linux 和 macOS 上的安装方法说明：</p>
+</div><div class="cl-preview-section"><pre class=" language-bash"><code class="prism  language-bash"><span class="token comment"># Debian/Ubuntu</span>
+curl -s https://packagecloud.io/install/repositories/akopytov/sysbench/script.deb.sh <span class="token operator">|</span> <span class="token function">sudo</span> <span class="token function">bash</span>
+<span class="token function">sudo</span> apt -y <span class="token function">install</span> sysbench
+
+<span class="token comment"># RHEL/CentOS</span>
+curl -s https://packagecloud.io/install/repositories/akopytov/sysbench/script.rpm.sh <span class="token operator">|</span> <span class="token function">sudo</span> <span class="token function">bash</span>
+<span class="token function">sudo</span> yum -y <span class="token function">install</span> sysbench
+
+<span class="token comment"># Fedora</span>
+curl -s https://packagecloud.io/install/repositories/akopytov/sysbench/script.rpm.sh <span class="token operator">|</span> <span class="token function">sudo</span> <span class="token function">bash</span>
+<span class="token function">sudo</span> dnf -y <span class="token function">install</span> sysbench
+
+<span class="token comment"># macOS</span>
+brew <span class="token function">install</span> sysbench
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">如果你的机器是 mac，那就会非常的方便了（不仅仅是 sysbench，对于其他工具的安装也非常方便），只需要通过 brew 就可以完成安装。安装完成之后，可以验证下是否安装成功：</p>
+</div><div class="cl-preview-section"><pre class=" language-bash"><code class="prism  language-bash"><span class="token comment"># 直接在终端下执行即可（由于存在版本更新的可能，你的版本号可能与我的不同）</span>
+➜  ~ sysbench --version
+sysbench 1.0.18
+</code></pre>
+</div><div class="cl-preview-section"><h3 id="sysbench-语法">2.3 sysbench 语法</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">只需要在终端下执行 <code>sysbench --help</code> 命令，就可以看到关于 sysbench 的详细使用方法。首先，看一看它的基本语法：</p>
+</div><div class="cl-preview-section"><pre class=" language-bash"><code class="prism  language-bash">sysbench <span class="token punctuation">[</span>options<span class="token punctuation">]</span><span class="token punctuation">..</span>. <span class="token punctuation">[</span>testname<span class="token punctuation">]</span> <span class="token punctuation">[</span>command<span class="token punctuation">]</span>
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">所以，你也就知道了，学会使用 sysbench，只需要搞明白：options、testname、lua_options 和 command。options 是选项或参数的意思，它涵盖的内容非常多，例如：数据库相关的、日志相关的、行为相关的等等。下面，我先去介绍一些常用的 options：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;">通用数据库选项
+<ul>
+<li style="font-size: 20px; line-height: 38px;">–db-driver：指定数据库的类型，默认是 mysql</li>
+</ul>
+</li>
+<li style="font-size: 20px; line-height: 38px;">MySQL 相关选项
+<ul>
+<li style="font-size: 20px; line-height: 38px;">–mysql-host：服务器主机地址，默认是 localhost</li>
+<li style="font-size: 20px; line-height: 38px;">–mysql-port：服务器端口，默认是 3306</li>
+<li style="font-size: 20px; line-height: 38px;">–mysql-user：用户名，默认是 sbtest</li>
+<li style="font-size: 20px; line-height: 38px;">–mysql-password：密码</li>
+<li style="font-size: 20px; line-height: 38px;">–mysql-db：指定测试数据库，默认是 sbtest（需要自行创建）</li>
+</ul>
+</li>
+<li style="font-size: 20px; line-height: 38px;">执行（通用）选项
+<ul>
+<li style="font-size: 20px; line-height: 38px;">–threads：创建测试线程的数量，默认是1</li>
+<li style="font-size: 20px; line-height: 38px;">–events：事件数量</li>
+<li style="font-size: 20px; line-height: 38px;">–time：最大执行时间，单位是秒</li>
+<li style="font-size: 20px; line-height: 38px;">–report-interval：生成报告的时间间隔，0代表禁止，默认是0</li>
+<li style="font-size: 20px; line-height: 38px;">–debug：是否打印更多的调试信息，默认是 off</li>
+<li style="font-size: 20px; line-height: 38px;">–config-file：配置文件</li>
+</ul>
+</li>
+</ul>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">testname 标识要进行的测试，在老版本的 sysbench 中，可以通过 --test 选项指定测试脚本，而在新版本中，–test 已经被废弃了，而是直接可以指定测试脚本。例如：</p>
+</div><div class="cl-preview-section"><pre class=" language-bash"><code class="prism  language-bash">➜  ~ sysbench /usr/local/Cellar/sysbench/1.0.18_1/share/sysbench/oltp_read_only.lua
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">sysbench 测试使用的是 lua 脚本，绝大多数情况下，使用 sysbench 自带的就已经足够了。对于不同版本的 sysbench，脚本的位置也可能会不同。下面，我给出一种简单的方法来寻找这些自带的脚本：</p>
+</div><div class="cl-preview-section"><pre class=" language-bash"><code class="prism  language-bash"><span class="token comment"># 先确定你已经成功安装了 sysbench</span>
+➜  ~ sysbench --version
+sysbench 1.0.18
+
+<span class="token comment"># 使用 which 命令找到可执行文件的位置</span>
+➜  ~ <span class="token function">which</span> sysbench
+/usr/local/bin/sysbench
+
+<span class="token comment"># 可以发现 /usr/local/bin/sysbench 是个软链接，同时也指出了 sysbench 的安装目录</span>
+➜  ~ <span class="token function">ls</span> -l /usr/local/bin/sysbench
+lrwxr-xr-x 1 qinyi 40 12  3 20:19 /usr/local/bin/sysbench -<span class="token operator">&gt;</span> <span class="token punctuation">..</span>/Cellar/sysbench/1.0.18_1/bin/sysbench
+
+<span class="token comment"># 进入到 sysbench 的安装目录中</span>
+➜  ~ <span class="token function">cd</span> /usr/local/Cellar/sysbench/1.0.18_1/
+
+<span class="token comment"># 自带的 lua 脚本位于安装目录下的 share/sysbench 目录中</span>
+➜  1.0.18_1 <span class="token function">ls</span> -lt share/sysbench
+total 60
+drwxr-xr-x 5 qinyi   160 12  3 20:19 tests
+-rwxr-xr-x 1 qinyi  1452 10 21 14:23 bulk_insert.lua
+-rw-r--r-- 1 qinyi 14369 10 21 14:23 oltp_common.lua
+-rwxr-xr-x 1 qinyi  1290 10 21 14:23 oltp_delete.lua
+-rwxr-xr-x 1 qinyi  2415 10 21 14:23 oltp_insert.lua
+-rwxr-xr-x 1 qinyi  1265 10 21 14:23 oltp_point_select.lua
+-rwxr-xr-x 1 qinyi  1649 10 21 14:23 oltp_read_only.lua
+-rwxr-xr-x 1 qinyi  1824 10 21 14:23 oltp_read_write.lua
+-rwxr-xr-x 1 qinyi  1118 10 21 14:23 oltp_update_index.lua
+-rwxr-xr-x 1 qinyi  1127 10 21 14:23 oltp_update_non_index.lua
+-rwxr-xr-x 1 qinyi  1440 10 21 14:23 oltp_write_only.lua
+-rwxr-xr-x 1 qinyi  1919 10 21 14:23 select_random_points.lua
+-rwxr-xr-x 1 qinyi  2118 10 21 14:23 select_random_ranges.lua
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">command 是 sysbench 要执行的命令，一共有四类：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;">prepare：准备数据的命令。在 sysbench 压力测试之前，需要先准备好测试库、测试表以及测试表中的数据</li>
+<li style="font-size: 20px; line-height: 38px;">run：进行压力测试</li>
+<li style="font-size: 20px; line-height: 38px;">cleanup：清除测试时产生的数据</li>
+<li style="font-size: 20px; line-height: 38px;">help：输出给定 lua 脚本的帮助信息</li>
+</ul>
+</div><div class="cl-preview-section"><h3 id="sysbench-使用说明">2.4 sysbench 使用说明</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">至此，已经介绍了 sysbench 的安装和使用方法，那么，接下来就一定是使用 sysbench 做基准测试了。别着急，先来看看关于 sysbench 的使用说明：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;">不要在线上 MySQL 服务器执行测试，这会严重影响服务性能</li>
+<li style="font-size: 20px; line-height: 38px;">逐步增加并发连接数（–threads 选项，例如：10、20、50、100），观察 MySQL 的表现</li>
+<li style="font-size: 20px; line-height: 38px;">每一轮完整的测试都应该包含 cleanup</li>
+</ul>
+</div><div class="cl-preview-section"><h2 id="使用-sysbench-对-mysql-进行测试" style="font-size: 30px;">3 使用 sysbench 对 MySQL 进行测试</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">sysbench 的测试过程其实就是对应于它的 command（prepare、run、cleanup），那么，我接下来就按照这个步骤完整的走一遍对 MySQL 的基准测试。最后，再去解读测试报告以及给出测试建议。</p>
+</div><div class="cl-preview-section"><h3 id="测试前的准备工作">3.1 测试前的准备工作</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">由于 sysbench 使用 sbtest 库（默认使用的库名）做测试，我们就需要先来创建一个测试库（当然也可以自行指定其他的库，但必须是要存在的）：</p>
+</div><div class="cl-preview-section"><pre class=" language-bash"><code class="prism  language-bash"><span class="token comment"># 通过 mysqladmin 工具创建 sbtest 测试库（通过 MySQL 客户端 CREATE DATABASE 也是一样的）</span>
+➜  ~ mysqladmin -h127.0.0.1 -uroot -proot -P3306 create sbtest
+mysqladmin: <span class="token punctuation">[</span>Warning<span class="token punctuation">]</span> Using a password on the <span class="token function">command</span> line interface can be insecure.
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">创建测试库之后，就可以使用 sysbench 去完成准备工作了。我们在 sbtest 库中创建5张测试表，每张表中插入5000条数据，执行如下命令：</p>
+</div><div class="cl-preview-section"><pre class=" language-bash"><code class="prism  language-bash"><span class="token comment"># --tables=5表示创建5个测试表，--table_size=5000表示每个表中插入5000行数据</span>
+➜  ~ sysbench --mysql-host<span class="token operator">=</span>127.0.0.1 \
+         --mysql-port<span class="token operator">=</span>3306 \
+         --mysql-user<span class="token operator">=</span>root \
+         --mysql-password<span class="token operator">=</span>root \
+         /usr/local/Cellar/sysbench/1.0.18_1/share/sysbench/oltp_common.lua \
+         --tables<span class="token operator">=</span>5 \
+         --table_size<span class="token operator">=</span>5000 \
+         prepare
+sysbench 1.0.18 <span class="token punctuation">(</span>using bundled LuaJIT 2.1.0-beta2<span class="token punctuation">)</span>
+
+Creating table <span class="token string">'sbtest1'</span><span class="token punctuation">..</span>.
+Inserting 5000 records into <span class="token string">'sbtest1'</span>
+Creating a secondary index on <span class="token string">'sbtest1'</span><span class="token punctuation">..</span>.
+Creating table <span class="token string">'sbtest2'</span><span class="token punctuation">..</span>.
+Inserting 5000 records into <span class="token string">'sbtest2'</span>
+Creating a secondary index on <span class="token string">'sbtest2'</span><span class="token punctuation">..</span>.
+Creating table <span class="token string">'sbtest3'</span><span class="token punctuation">..</span>.
+Inserting 5000 records into <span class="token string">'sbtest3'</span>
+Creating a secondary index on <span class="token string">'sbtest3'</span><span class="token punctuation">..</span>.
+Creating table <span class="token string">'sbtest4'</span><span class="token punctuation">..</span>.
+Inserting 5000 records into <span class="token string">'sbtest4'</span>
+Creating a secondary index on <span class="token string">'sbtest4'</span><span class="token punctuation">..</span>.
+Creating table <span class="token string">'sbtest5'</span><span class="token punctuation">..</span>.
+Inserting 5000 records into <span class="token string">'sbtest5'</span>
+Creating a secondary index on <span class="token string">'sbtest5'</span><span class="token punctuation">..</span>.
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">由于之前已经讲解过这些选项、参数的含义，我这里就不再赘述了（命令输出也比较简单、易读）。准备工作完成之后，你可以去数据库中查看下 sysbench 都 fake 了哪些数据。</p>
+</div><div class="cl-preview-section"><h3 id="执行测试">3.2 执行测试</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">如果你仔细观察 sysbench 自带的 lua 脚本名称，你就会发现，它们包含了很多类型的测试，例如：只读测试、只写测试、删除测试、大批量插入测试等等。我们这里挑选 oltp_read_write.lua（任意挑选，不具有特殊含义）来执行测试：</p>
+</div><div class="cl-preview-section"><pre class=" language-bash"><code class="prism  language-bash"><span class="token comment"># 测试 60s，并把测试输出到 /tmp/sysbench.log 文件中</span>
+➜  ~ sysbench --threads<span class="token operator">=</span>4 \
+         --time<span class="token operator">=</span>60 \
+         --report-interval<span class="token operator">=</span>10 \
+         --mysql-host<span class="token operator">=</span>127.0.0.1 \
+         --mysql-port<span class="token operator">=</span>3306 \
+         --mysql-user<span class="token operator">=</span>root \
+         --mysql-password<span class="token operator">=</span>root \
+         /usr/local/Cellar/sysbench/1.0.18_1/share/sysbench/oltp_read_write.lua \
+         --tables<span class="token operator">=</span>5 \
+         --table_size<span class="token operator">=</span>5000 \
+         run <span class="token operator">&gt;&gt;</span> /tmp/sysbench.log
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">执行上面这个命令，我们的终端会 hang 住60秒，并把打印输出重定向到 /tmp/sysbench.log 文件中。这里我暂时不去解读这份测试输出，不过，你可以先打开去看一看。</p>
+</div><div class="cl-preview-section"><h3 id="测试后的清理工作">3.3 测试后的清理工作</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">在介绍 sysbench 的时候我就说过，每一轮完整的测试过程都应该包含清理工作。所以，当执行完上面的命令之后，紧接着执行下 cleanup 吧：</p>
+</div><div class="cl-preview-section"><pre class=" language-bash"><code class="prism  language-bash">➜  ~ sysbench --mysql-host<span class="token operator">=</span>127.0.0.1 \
+         --mysql-port<span class="token operator">=</span>3306 \
+         --mysql-user<span class="token operator">=</span>root \
+         --mysql-password<span class="token operator">=</span>root \
+         /usr/local/Cellar/sysbench/1.0.18_1/share/sysbench/oltp_common.lua \
+         --tables<span class="token operator">=</span>5 \
+         cleanup
+sysbench 1.0.18 <span class="token punctuation">(</span>using bundled LuaJIT 2.1.0-beta2<span class="token punctuation">)</span>
+
+Dropping table <span class="token string">'sbtest1'</span><span class="token punctuation">..</span>.
+Dropping table <span class="token string">'sbtest2'</span><span class="token punctuation">..</span>.
+Dropping table <span class="token string">'sbtest3'</span><span class="token punctuation">..</span>.
+Dropping table <span class="token string">'sbtest4'</span><span class="token punctuation">..</span>.
+Dropping table <span class="token string">'sbtest5'</span><span class="token punctuation">..</span>.
+</code></pre>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">可以看到，cleanup 过程是非常简单的，它直接把创建的5张测试表 DROP 掉了。不过，需要注意，cleanup 并没有删除测试库 sbtest。我们可以据此得出结论，sysbench 不会参与到测试库的创建和删除过程。</p>
+</div><div class="cl-preview-section"><h3 id="测试结果的分析">3.4 测试结果的分析</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">在执行 run 命令时，我将结果输出重定向到了 /tmp/sysbench.log 文件中，这里，我们来一起解读下，看看基准测试的结果（已经做了相关注释）。</p>
+</div><div class="cl-preview-section"><pre class=" language-bash"><code class="prism  language-bash">sysbench 1.0.18 <span class="token punctuation">(</span>using bundled LuaJIT 2.1.0-beta2<span class="token punctuation">)</span>
+
+<span class="token comment"># 执行测试的一些基本设置：并发线程数为4、每10秒报告一次测试结果</span>
+Running the <span class="token function">test</span> with following options:
+Number of threads: 4
+Report intermediate results every 10 second<span class="token punctuation">(</span>s<span class="token punctuation">)</span>
+Initializing random number generator from current <span class="token function">time</span>
+
+<span class="token comment"># 初始化（测试）工作线程</span>
+Initializing worker threads<span class="token punctuation">..</span>.
+
+Threads started<span class="token operator">!</span>
+
+<span class="token comment"># 每10s报告一次测试结果</span>
+<span class="token comment"># thds（线程数）、tps（每秒事务数）、qps（每秒查询数）、r/w/o（每秒的读/写/其它次数）、lat（延迟）、err/s（每秒错误数）、reconn/s（每秒重连次数）</span>
+<span class="token punctuation">[</span> 10s <span class="token punctuation">]</span> thds: 4 tps: 93.38 qps: 1875.13 <span class="token punctuation">(</span>r/w/o: 1312.87/375.10/187.15<span class="token punctuation">)</span> lat <span class="token punctuation">(</span>ms,95%<span class="token punctuation">)</span>: 58.92 err/s: 0.00 reconn/s: 0.00
+<span class="token punctuation">[</span> 20s <span class="token punctuation">]</span> thds: 4 tps: 104.49 qps: 2089.73 <span class="token punctuation">(</span>r/w/o: 1462.81/417.95/208.97<span class="token punctuation">)</span> lat <span class="token punctuation">(</span>ms,95%<span class="token punctuation">)</span>: 51.02 err/s: 0.00 reconn/s: 0.00
+<span class="token punctuation">[</span> 30s <span class="token punctuation">]</span> thds: 4 tps: 107.62 qps: 2152.04 <span class="token punctuation">(</span>r/w/o: 1506.64/430.17/215.23<span class="token punctuation">)</span> lat <span class="token punctuation">(</span>ms,95%<span class="token punctuation">)</span>: 49.21 err/s: 0.00 reconn/s: 0.00
+<span class="token punctuation">[</span> 40s <span class="token punctuation">]</span> thds: 4 tps: 109.86 qps: 2197.47 <span class="token punctuation">(</span>r/w/o: 1538.02/439.73/219.72<span class="token punctuation">)</span> lat <span class="token punctuation">(</span>ms,95%<span class="token punctuation">)</span>: 51.02 err/s: 0.00 reconn/s: 0.00
+<span class="token punctuation">[</span> 50s <span class="token punctuation">]</span> thds: 4 tps: 112.04 qps: 2240.84 <span class="token punctuation">(</span>r/w/o: 1568.59/448.17/224.08<span class="token punctuation">)</span> lat <span class="token punctuation">(</span>ms,95%<span class="token punctuation">)</span>: 44.17 err/s: 0.00 reconn/s: 0.00
+<span class="token punctuation">[</span> 60s <span class="token punctuation">]</span> thds: 4 tps: 111.80 qps: 2235.59 <span class="token punctuation">(</span>r/w/o: 1565.19/446.80/223.60<span class="token punctuation">)</span> lat <span class="token punctuation">(</span>ms,95%<span class="token punctuation">)</span>: 45.79 err/s: 0.00 reconn/s: 0.00
+
+SQL statistics:   <span class="token comment"># SQL 统计信息</span>
+    queries performed:
+        read:                            89544  <span class="token comment"># 执行的读操作数量</span>
+        write:                           25584  <span class="token comment"># 执行的写操作数量</span>
+        other:                           12792  <span class="token comment"># 执行的其它操作数量</span>
+        total:                           127920 <span class="token comment"># 全部总数</span>
+    transactions:                        6396   <span class="token punctuation">(</span>106.53 per sec.<span class="token punctuation">)</span>   <span class="token comment"># 总事务数（执行事务的平均速率）</span>
+    queries:                             127920 <span class="token punctuation">(</span>2130.62 per sec.<span class="token punctuation">)</span>  <span class="token comment"># 查询数（平均每秒能执行多少次查询）</span>
+    ignored errors:                      0      <span class="token punctuation">(</span>0.00 per sec.<span class="token punctuation">)</span>     <span class="token comment"># 忽略错误数</span>
+    reconnects:                          0      <span class="token punctuation">(</span>0.00 per sec.<span class="token punctuation">)</span>     <span class="token comment"># 重新连接次数</span>
+
+General statistics:   <span class="token comment"># 通用统计信息</span>
+    total time:                          60.0372s   <span class="token comment"># 测试总耗时</span>
+    total number of events:              6396       <span class="token comment"># 总请求数量(读、写、其它)</span>
+
+Latency <span class="token punctuation">(</span>ms<span class="token punctuation">)</span>:   <span class="token comment"># 延迟信息</span>
+         min:                                   15.72   <span class="token comment"># 最小延迟</span>
+         avg:                                   37.53   <span class="token comment"># 平均延迟</span>
+         max:                                  324.36   <span class="token comment"># 最大延迟</span>
+         95th percentile:                       51.94   <span class="token comment"># 前 95% 的延迟</span>
+         sum:                               240039.46   <span class="token comment"># 总延迟</span>
+
+Threads fairness:   <span class="token comment"># 线程稳定性</span>
+    events <span class="token punctuation">(</span>avg/stddev<span class="token punctuation">)</span>:           1599.0000/4.74   <span class="token comment"># 事件数(平均值/标准差)</span>
+    execution <span class="token function">time</span> <span class="token punctuation">(</span>avg/stddev<span class="token punctuation">)</span>:   60.0099/0.01     <span class="token comment"># 执行时间(平均值/标准差)</span>
+</code></pre>
+</div><div class="cl-preview-section"><h3 id="关于使用-sysbench-的一些建议">3.5 关于使用 sysbench 的一些建议</h3>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">到目前为止，你应该知道了什么是 sysbench，以及怎样利用 sysbench 对数据库做基准测试。最后，我来阐述几点建议：</p>
+</div><div class="cl-preview-section"><ul>
+<li style="font-size: 20px; line-height: 38px;">如果想要使用真实数据做基准测试，可以自行创建测试表和插入数据，不走 sysbench 的 prepare</li>
+<li style="font-size: 20px; line-height: 38px;">基准测试要执行多次才有意思，且建议每次测试时长不低于1个小时</li>
+<li style="font-size: 20px; line-height: 38px;">基准测试一定要模拟多线程的情况，单线程不但无法模拟真实的环境，也无法模拟阻塞以及死锁的情况</li>
+</ul>
+</div><div class="cl-preview-section"><h2 id="总结" style="font-size: 30px;">4 总结</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">理解和执行基准测试并没有很高的难度，但是如何判断数据库性能的高低就是一门学问了。这需要你去根据基准测试结果不断的调整数据库参数（有时候甚至需要调整操作系统的参数），毋庸置疑，这是一件麻烦且非常消耗精力的事。所以，一定不要集中化，有空的时候做做基准测试，收集并比对之前的结果，逐步调优。</p>
+</div><div class="cl-preview-section"><h2 id="问题" style="font-size: 30px;">5 问题</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">你之前做过哪方面的基准测试 ？是用什么工具做的 ？<br><br>
+你能说说 sysbench 工具自带的 lua 脚本是用来做哪些类型的测试吗 ？<br><br>
+使用 sysbench 自带的脚本对 MySQL 做基准测试，并分析测试结果 ？</p>
+</div><div class="cl-preview-section"><h2 id="参考资料" style="font-size: 30px;">6 参考资料</h2>
+</div><div class="cl-preview-section"><p style="font-size: 20px; line-height: 38px;">《高性能 MySQL（第三版）》<br><br>
+<a href="https://github.com/akopytov/sysbench">sysbench github</a><br><br>
+<a href="https://dev.mysql.com/doc/refman/5.6/en/optimize-benchmarking.html">MySQL 官方文档：Measuring Performance (Benchmarking)</a><br><br>
+<a href="https://dev.mysql.com/doc/refman/5.6/en/ha-overview.html">MySQL 官方文档：High Availability and Scalability</a></p>
+</div>}
+                        </div>
+                    </div>
+                                            <!-- 买过的阅读 -->
+                        <div class="art-next-prev clearfix">
+                                                                                                <!-- 已买且开放 或者可以试读 -->
+                                    <a href="/read/71/article/1699">
+                                                                    <div class="prev l clearfix">
+                                        <div class="icon l">
+                                            <i class="imv2-arrow3_l"></i>
+                                        </div>
+                                        <p>
+                                            12 死锁是怎么出现的？又是怎么解决的呢？
+                                        </p>
+                                    </div>
+                                </a>
+                                                                                                                            <!-- 已买且开放 或者可以试读 -->
+                                    <a href="/read/71/article/1706">
+                                                                    <div class="next r clearfix">
+                                        <p>
+                                            14 你应该知道的系统数据库及常用系统表
+                                        </p>
+                                        <div class="icon r">
+                                            <i class="imv2-arrow3_r"></i>
+                                        </div>
+
+                                    </div>
+                                </a>
+                                                    </div>
+                                    </div>
+                <div class="comments-con js-comments-con" id="coments_con">
+                </div>
+
+                
+            </div>
+            
+            
+            
+
+        </div>
+    </div>
+</div>
+
+<div class="modal modal-jiaQun-new hide" id="modal-jiaQun">
+    <div class="inner" style="">
+        <div class="modal-close js-close-jiaQun">
+            <i class="imv2-close"></i>
+        </div>
+        <div class="content">
+            <img src="https://img2.sycdn.imooc.com/5eba10270001392b05330597.jpg">
+            <div class="right-info">
+                <div class="title">
+                    扫码加入慕课前沿技术核心用户群
+                </div>
+                <div class="desc">
+                                            <p class="mb6">验证信息：<span id="joincode">2010291942557129</span><span class="copy js-copy-joincode">复制</span></p>
+                                        <p class="mb6">QQ讨论群号：729941811</p>
+                                            <p>QQ群URL：<a href="https://jq.qq.com/?_wv=1027&amp;k=5WJLMxV" target="_blank">点击访问</a></p>
+                                    </div>
+            </div>
+            <p class="tip">若遇到搜索不到QQ群或加群失败，请联系客服邮箱:kf@imooc.com</p>
+        </div>
+    </div>
+</div>
+ 
+<!-- 专栏介绍页专栏评价 -->
+
+<!-- 专栏介绍页底部三条评价 -->
+
+<!-- 专栏阅读页弹层目录和介绍页页面目录 -->
+
+<!-- 专栏阅读页发布回复 -->
+
+<!-- 专栏阅读页发布评论 -->
+
+<!-- 专栏阅读页底部评论 -->
+
+<!-- 专栏阅读 单个 评论 -->
+
+<!-- 新增回复和展开三条以外回复 -->
+
+<!-- 立即订阅的弹窗 -->
+
+
+
+
+
+
+
+
+
+
+
+
+</div></body></html>
